@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Activity, User, Phone, Clock, MapPin, Stethoscope } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 interface InChairQueueProps {
   searchTerm: string;
@@ -27,14 +28,17 @@ interface InChairPatient {
 }
 
 export default function InChairQueue({ searchTerm, onPatientSelect }: InChairQueueProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: patients = [], isLoading } = useQuery({
     queryKey: ['in-chair-queue', searchTerm],
     queryFn: async () => {
       let query = supabase
         .from('patients')
         .select(`
-          id, 
-          arabic_full_name, 
+          id,
+          arabic_full_name,
           phone,
           visits!inner(
             id,
@@ -54,6 +58,49 @@ export default function InChairQueue({ searchTerm, onPatientSelect }: InChairQue
       const { data, error } = await query;
       if (error) throw error;
       return (data as InChairPatient[]) || [];
+    },
+  });
+
+  const completeVisitMutation = useMutation({
+    mutationFn: async ({ visitId, patientId }: { visitId: string; patientId: string }) => {
+      const now = new Date().toISOString();
+
+      // End visit
+      const { error: visitErr } = await supabase
+        .from('visits')
+        .update({ ended_at: now, status: 'completed' })
+        .eq('id', visitId);
+      if (visitErr) throw visitErr;
+
+      // Update patient status
+      const { error: patientErr } = await supabase
+        .from('patients')
+        .update({ status: 'completed' })
+        .eq('id', patientId);
+      if (patientErr) throw patientErr;
+
+      // Update any matching appointment for today
+      const { error: apptErr } = await supabase
+        .from('appointments')
+        .update({ status: 'completed' })
+        .eq('patient_id', patientId)
+        .eq('status', 'in_chair');
+      if (apptErr) throw apptErr;
+
+      return { visitId, patientId };
+    },
+    onSuccess: () => {
+      toast({ title: 'Visit completed', description: 'Patient moved to completed queue' });
+      queryClient.invalidateQueries({ queryKey: ['today-appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['arrived-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['ready-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['in-chair-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['completed-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] });
+    },
+    onError: (error) => {
+      console.error('Error completing visit:', error);
+      toast({ title: 'Error', description: 'Failed to complete visit', variant: 'destructive' });
     },
   });
 
@@ -87,7 +134,7 @@ export default function InChairQueue({ searchTerm, onPatientSelect }: InChairQue
       {patients.map((patient) => {
         const visit = patient.visits[0]; // Current visit
         const startTime = new Date(visit.started_at);
-        
+
         return (
           <div
             key={patient.id}
@@ -113,7 +160,7 @@ export default function InChairQueue({ searchTerm, onPatientSelect }: InChairQue
                     {patient.arabic_full_name}
                   </h3>
                 </div>
-                
+
                 {patient.phone && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Phone className="h-3 w-3" />
@@ -131,7 +178,7 @@ export default function InChairQueue({ searchTerm, onPatientSelect }: InChairQue
                   <span>{visit.providers.display_name}</span>
                 </div>
               )}
-              
+
               {visit.rooms && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <MapPin className="h-3 w-3" />
@@ -146,10 +193,19 @@ export default function InChairQueue({ searchTerm, onPatientSelect }: InChairQue
                 size="sm"
                 variant="outline"
                 onClick={() => onPatientSelect(patient.id)}
-                className="flex-1 text-xs"
+                className="text-xs"
               >
                 <User className="mr-1 h-3 w-3" />
                 View Patient
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={() => completeVisitMutation.mutate({ visitId: visit.id, patientId: patient.id })}
+                className="flex-1 text-xs bg-amber-600 hover:bg-amber-700"
+                disabled={completeVisitMutation.isPending}
+              >
+                Complete Visit
               </Button>
             </div>
           </div>
