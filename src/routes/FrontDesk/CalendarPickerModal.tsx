@@ -149,19 +149,40 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
             {/* Time Slots */}
             {selectedDate && (
               <div>
-                <h3 className="font-medium mb-2">Select Time</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium mb-2">Select Time</h3>
+                  <div>
+                    <Button size="sm" variant="outline" onClick={() => {
+                      const found = findNearestAvailable();
+                      if (found) {
+                        const timeStr = format(found.slot.start, 'HH:mm');
+                        setSelectedTime(timeStr);
+                        if (!selectedProvider && found.provider) setSelectedProvider(found.provider);
+                      } else {
+                        toast({ title: 'No available slots', description: 'No available times found in clinic availability', variant: 'destructive' });
+                      }
+                    }}>Nearest Available</Button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-                  {timeSlots.map((time) => (
-                    <Button
-                      key={time}
-                      variant={selectedTime === time ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedTime(time)}
-                      className="text-xs"
-                    >
-                      {time}
-                    </Button>
-                  ))}
+                  {slots.map((slot: any) => {
+                    const timeStr = format(slot.start, 'HH:mm');
+                    const disabled = selectedProvider ? isSlotConflictingForProvider(slot, selectedProvider) : isSlotTakenByAllProviders(slot);
+
+                    return (
+                      <Button
+                        key={timeStr}
+                        variant={selectedTime === timeStr ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => !disabled && setSelectedTime(timeStr)}
+                        disabled={disabled}
+                        className="text-xs"
+                      >
+                        {timeStr}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
             )}
