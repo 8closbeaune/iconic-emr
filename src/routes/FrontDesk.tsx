@@ -76,7 +76,7 @@ export default function FrontDesk() {
         </div>
 
         {/* Grid layout */}
-        <div className="grid grid-cols-12 gap-6 items-stretch auto-rows-[1fr]">
+        <div className="grid grid-cols-12 gap-6 items-stretch auto-rows-auto">
           {/* Row 1: Today’s Appointments */}
           <div className="col-span-12 h-auto">
             <div className="flex flex-col rounded-lg border bg-card">
