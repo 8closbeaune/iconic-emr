@@ -30,19 +30,37 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
   const { data: rooms = [] } = useRooms();
   const createAppointmentMutation = useCreateAppointmentPlanned();
 
-  // Generate time slots (9 AM to 5 PM, 30-minute intervals)
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 9; hour < 17; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push(time);
-      }
-    }
-    return slots;
+  // Availability & conflicts
+  const { getAvailableSlots } = require('@/hooks/useAvailabilityValidation') as any;
+  // Fetch appointments for the selected date to check provider conflicts
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+
+  const { data: dayAppointments = [] } = (() => {
+    if (!selectedDate) return { data: [] } as any;
+    const start = startOfDay(selectedDate);
+    const end = endOfDay(selectedDate);
+    const { useCalendarAppointments } = require('@/hooks/useCalendarData') as any;
+    return useCalendarAppointments(start, end, {} as any);
+  })();
+
+  const slots = selectedDate ? getAvailableSlots(selectedDate, selectedRoom) : [];
+
+  const overlaps = (aStart: string | Date, aEnd: string | Date, bStart: Date, bEnd: Date) => {
+    const as = typeof aStart === 'string' ? new Date(aStart) : aStart;
+    const ae = typeof aEnd === 'string' ? new Date(aEnd) : aEnd;
+    return as < bEnd && ae > bStart;
   };
 
-  const timeSlots = generateTimeSlots();
+  const isSlotConflictingForProvider = (slot: any, providerId?: string) => {
+    if (!providerId) return false;
+    return dayAppointments.some((appt: any) => appt.provider_id === providerId && overlaps(appt.starts_at, appt.ends_at, slot.start, slot.end));
+  };
+
+  const isSlotTakenByAllProviders = (slot: any) => {
+    if (!providers || providers.length === 0) return false;
+    return providers.every((p: any) => dayAppointments.some((appt: any) => appt.provider_id === p.id && overlaps(appt.starts_at, appt.ends_at, slot.start, slot.end)));
+  };
 
   const handleCreateAppointment = async () => {
     if (!patient || !selectedDate || !selectedTime) {
@@ -58,6 +76,12 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
       const [hours, minutes] = selectedTime.split(':').map(Number);
       const startDateTime = setMinutes(setHours(selectedDate, hours), minutes);
       const endDateTime = addMinutes(startDateTime, 30); // Default 30 minutes
+
+      // Check provider conflict
+      if (selectedProvider && isSlotConflictingForProvider({ start: startDateTime, end: endDateTime }, selectedProvider)) {
+        toast({ title: 'Provider conflict', description: 'Selected provider is not available at this time', variant: 'destructive' });
+        return;
+      }
 
       await createAppointmentMutation.mutateAsync({
         patient_id: patient.id,
@@ -81,6 +105,24 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
         variant: "destructive",
       });
     }
+  };
+
+  const findNearestAvailable = () => {
+    if (!slots || slots.length === 0) return null;
+    for (const slot of slots) {
+      if (selectedProvider) {
+        if (!isSlotConflictingForProvider(slot, selectedProvider)) {
+          return { slot, provider: selectedProvider };
+        }
+      } else {
+        // find any provider free
+        const freeProvider = providers.find((p: any) => !dayAppointments.some((appt: any) => appt.provider_id === p.id && overlaps(appt.starts_at, appt.ends_at, slot.start, slot.end)));
+        if (freeProvider) {
+          return { slot, provider: freeProvider.id };
+        }
+      }
+    }
+    return null;
   };
 
   const selectedProviderData = providers.find(p => p.id === selectedProvider);
