@@ -6,11 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { User, CalendarClock, Stethoscope, DoorOpen } from 'lucide-react';
-import { useProviders, useRooms } from '@/hooks/useCalendarData';
+import { useProviders, useRooms, useCalendarAppointments } from '@/hooks/useCalendarData';
 import { useCreateAppointmentPlanned } from '@/hooks/useFrontDeskActions';
 import { useToast } from '@/hooks/use-toast';
 import { SearchResult, CreatedPatient } from './AddPatientModal';
-import { format, addMinutes, setHours, setMinutes } from 'date-fns';
+import { format, addMinutes, setHours, setMinutes, startOfDay, endOfDay } from 'date-fns';
+import { useAvailabilityValidation } from '@/hooks/useAvailabilityValidation';
+import { useState } from 'react';
 
 interface CalendarPickerModalProps {
   isOpen: boolean;
