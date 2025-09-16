@@ -14,48 +14,57 @@ export default function ArrivedQueue({ searchTerm, onPatientSelect }: ArrivedQue
   const { data: patients = [], isLoading } = useQuery({
     queryKey: ['arrived-queue', searchTerm],
     queryFn: async () => {
+      const today = new Date();
+      const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString();
+
       let query = supabase
-        .from('patients')
-        .select('id, arabic_full_name, phone, created_at, updated_at')
-        .eq('status', 'arrived')
-        .order('updated_at', { ascending: true }); // First arrived, first served
+        .from('appointments')
+        .select(`
+          id,
+          patient_id,
+          provider_id,
+          room_id,
+          status,
+          starts_at,
+          patients!inner(
+            id,
+            arabic_full_name,
+            phone,
+            intake_signed,
+            updated_at
+          ),
+          providers(display_name),
+          rooms(name)
+        `)
+        .in('status', ['arrived', 'ready'])
+        .gte('starts_at', start)
+        .lte('starts_at', end)
+        .eq('patients.intake_signed', false)
+        .order('starts_at', { ascending: true });
 
       if (searchTerm) {
-        query = query.or(`arabic_full_name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
+        query = query.or(`patients.arabic_full_name.ilike.%${searchTerm}%,patients.phone.ilike.%${searchTerm}%`);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+
+      // Map into a simpler shape for rendering
+      return (data || []).map((a: any) => ({
+        id: a.patients.id,
+        arabic_full_name: a.patients.arabic_full_name,
+        phone: a.patients.phone,
+        updated_at: a.patients.updated_at,
+        provider: a.providers,
+        room: a.rooms
+      }));
     },
   });
 
   const handleOpenIntake = (patientId: string) => {
-    // Navigate to intake form
     window.location.href = `/intake/form?patient=${patientId}`;
   };
-
-  // Fetch today's appointments for these patients to get provider/room
-  const { data: apptsMap } = useQuery({
-    queryKey: ['arrived-appts', patients.map(p => p.id).join(',')],
-    enabled: patients.length > 0,
-    queryFn: async () => {
-      const ids = patients.map(p => p.id);
-      const today = new Date();
-      const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-      const end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59).toISOString();
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('id, patient_id, provider_id, room_id, status, starts_at, providers(display_name), rooms(name)')
-        .in('patient_id', ids)
-        .gte('starts_at', start)
-        .lte('starts_at', end);
-      if (error) throw error;
-      const map: Record<string, any> = {};
-      (data || []).forEach((a: any) => { map[a.patient_id] = a; });
-      return map;
-    }
-  });
 
   if (isLoading) {
     return (
