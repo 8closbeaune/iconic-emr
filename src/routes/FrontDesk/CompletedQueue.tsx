@@ -99,7 +99,7 @@ export default function CompletedQueue({ searchTerm, onPatientSelect }: Complete
 
   if (patients.length === 0) {
     return (
-      <div className="p-4 text-center text-muted-foreground">
+      <div className="p-4 text-center text-muted-foreground flex items-center justify-center h-full">
         <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No completed visits</p>
         {searchTerm && (

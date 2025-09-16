@@ -81,7 +81,7 @@ export default function ArrivedQueue({ searchTerm, onPatientSelect }: ArrivedQue
 
   if (patients.length === 0) {
     return (
-      <div className="p-4 text-center text-muted-foreground">
+      <div className="p-4 text-center text-muted-foreground flex items-center justify-center h-full">
         <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No patients waiting for intake</p>
         {searchTerm && (
