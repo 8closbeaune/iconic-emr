@@ -143,7 +143,7 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
                 selected={selectedDate}
                 onSelect={setSelectedDate}
                 className="rounded-md border"
-                disabled={(date) => date < new Date()}
+                disabled={(date) => date < startOfDay(new Date())}
               />
             </div>
 
