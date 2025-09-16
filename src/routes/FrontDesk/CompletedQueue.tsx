@@ -63,7 +63,12 @@ export default function CompletedQueue({ searchTerm, onPatientSelect }: Complete
         title: "Patient discharged",
         description: "Patient checkout completed",
       });
+      queryClient.invalidateQueries({ queryKey: ['today-appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['arrived-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['ready-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['in-chair-queue'] });
       queryClient.invalidateQueries({ queryKey: ['completed-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] });
     },
     onError: (error) => {
       console.error('Error during checkout:', error);
