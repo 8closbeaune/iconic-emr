@@ -78,19 +78,23 @@ export default function FrontDesk() {
         {/* Grid layout */}
         <div className="grid grid-cols-12 gap-6 items-stretch auto-rows-[1fr]">
           {/* Row 1: Today’s Appointments */}
-          <div className="col-span-12 min-h-[220px]">
-            <div className="h-full flex flex-col rounded-lg border bg-card">
+          <div className="col-span-12 h-auto">
+            <div className="flex flex-col rounded-lg border bg-card">
               <div className="flex items-center justify-between border-b p-3">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-green-500" />
                   <h2 className="font-semibold text-sm">Today's Appointments</h2>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-2">
-                <TodayAppointments
-                  searchTerm=""
-                  onPatientSelect={handlePatientSelect}
-                />
+              <div className="p-2">
+                <div className="flex items-center">
+                  <div className="w-full">
+                    <TodayAppointments
+                      searchTerm=""
+                      onPatientSelect={handlePatientSelect}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -137,18 +141,17 @@ export default function FrontDesk() {
           </div>
 
           {/* Row 2: Right stack */}
-           
-           <div className="col-span-12 md:col-span-3">
+
+          <div className="col-span-12 md:col-span-3 h-full min-h-[520px] grid grid-rows-2 gap-6">
             {/* In-Chair */}
-            
-            <div className="flex-1 h-full flex flex-col rounded-lg border bg-card">
+            <div className="h-full flex flex-col rounded-lg border bg-card">
               <div className="border-b p-3">
                 <div className="flex items-center gap-2">
                   <Activity className="h-4 w-4 text-purple-500" />
                   <h2 className="font-semibold text-sm">In-Chair</h2>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto min-h-0 p-2">
                 <InChairQueue
                   searchTerm=""
                   onPatientSelect={handlePatientSelect}
@@ -157,15 +160,14 @@ export default function FrontDesk() {
             </div>
 
             {/* Completed */}
-            
-            <div className="flex-1 h-full flex flex-col rounded-lg border bg-card">
+            <div className="h-full flex flex-col rounded-lg border bg-card">
               <div className="border-b p-3">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-emerald-500" />
                   <h2 className="font-semibold text-sm">Completed</h2>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto min-h-0 p-2">
                 <CompletedQueue
                   searchTerm=""
                   onPatientSelect={handlePatientSelect}
