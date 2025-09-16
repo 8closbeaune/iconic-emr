@@ -129,8 +129,8 @@ export default function FrontDesk() {
                   <h2 className="font-semibold text-sm">Ready Queue</h2>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch p-2">
+              <div className="flex-1 overflow-y-auto min-h-0 p-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
                   <ReadyQueue
                     searchTerm=""
                     onPatientSelect={handlePatientSelect}
