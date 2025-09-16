@@ -12,7 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { SearchResult, CreatedPatient } from './AddPatientModal';
 import { format, addMinutes, setHours, setMinutes, startOfDay, endOfDay } from 'date-fns';
 import { useAvailabilityValidation } from '@/hooks/useAvailabilityValidation';
-import { useState } from 'react';
 
 interface CalendarPickerModalProps {
   isOpen: boolean;
