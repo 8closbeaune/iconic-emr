@@ -130,12 +130,10 @@ export default function FrontDesk() {
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto min-h-0 p-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-                  <ReadyQueue
-                    searchTerm=""
-                    onPatientSelect={handlePatientSelect}
-                  />
-                </div>
+                <ReadyQueue
+                  searchTerm=""
+                  onPatientSelect={handlePatientSelect}
+                />
               </div>
             </div>
           </div>
