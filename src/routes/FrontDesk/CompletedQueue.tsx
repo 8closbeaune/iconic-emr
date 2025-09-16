@@ -63,7 +63,12 @@ export default function CompletedQueue({ searchTerm, onPatientSelect }: Complete
         title: "Patient discharged",
         description: "Patient checkout completed",
       });
+      queryClient.invalidateQueries({ queryKey: ['today-appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['arrived-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['ready-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['in-chair-queue'] });
       queryClient.invalidateQueries({ queryKey: ['completed-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] });
     },
     onError: (error) => {
       console.error('Error during checkout:', error);
@@ -94,7 +99,7 @@ export default function CompletedQueue({ searchTerm, onPatientSelect }: Complete
 
   if (patients.length === 0) {
     return (
-      <div className="p-4 text-center text-muted-foreground">
+      <div className="p-4 text-center text-muted-foreground flex items-center justify-center h-full">
         <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No completed visits</p>
         {searchTerm && (

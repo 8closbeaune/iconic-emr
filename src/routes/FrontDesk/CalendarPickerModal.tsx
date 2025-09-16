@@ -6,11 +6,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { User, CalendarClock, Stethoscope, DoorOpen } from 'lucide-react';
-import { useProviders, useRooms } from '@/hooks/useCalendarData';
+import { useProviders, useRooms, useCalendarAppointments } from '@/hooks/useCalendarData';
 import { useCreateAppointmentPlanned } from '@/hooks/useFrontDeskActions';
 import { useToast } from '@/hooks/use-toast';
 import { SearchResult, CreatedPatient } from './AddPatientModal';
-import { format, addMinutes, setHours, setMinutes } from 'date-fns';
+import { format, addMinutes, setHours, setMinutes, startOfDay, endOfDay } from 'date-fns';
+import { useAvailabilityValidation } from '@/hooks/useAvailabilityValidation';
 
 interface CalendarPickerModalProps {
   isOpen: boolean;
@@ -25,24 +26,37 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [selectedProvider, setSelectedProvider] = useState<string>('');
   const [selectedRoom, setSelectedRoom] = useState<string>('');
+  const [mode, setMode] = useState<'all' | 'per'>('all');
 
   const { data: providers = [] } = useProviders();
   const { data: rooms = [] } = useRooms();
   const createAppointmentMutation = useCreateAppointmentPlanned();
 
-  // Generate time slots (9 AM to 5 PM, 30-minute intervals)
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 9; hour < 17; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push(time);
-      }
-    }
-    return slots;
+  // Availability & conflicts
+  const { getAvailableSlots } = useAvailabilityValidation();
+
+  // Appointments for the selected date to check provider conflicts
+  const start = selectedDate ? startOfDay(selectedDate) : startOfDay(new Date());
+  const end = selectedDate ? endOfDay(selectedDate) : endOfDay(new Date());
+  const { data: dayAppointments = [] } = useCalendarAppointments(start, end, {});
+
+  const slots = selectedDate ? getAvailableSlots(selectedDate, selectedRoom) : [];
+
+  const overlaps = (aStart: string | Date, aEnd: string | Date, bStart: Date, bEnd: Date) => {
+    const as = typeof aStart === 'string' ? new Date(aStart) : aStart;
+    const ae = typeof aEnd === 'string' ? new Date(aEnd) : aEnd;
+    return as < bEnd && ae > bStart;
   };
 
-  const timeSlots = generateTimeSlots();
+  const isSlotConflictingForProvider = (slot: any, providerId?: string) => {
+    if (!providerId) return false;
+    return dayAppointments.some((appt: any) => appt.provider_id === providerId && overlaps(appt.starts_at, appt.ends_at, slot.start, slot.end));
+  };
+
+  const isSlotTakenByAllProviders = (slot: any) => {
+    if (!providers || providers.length === 0) return false;
+    return providers.every((p: any) => dayAppointments.some((appt: any) => appt.provider_id === p.id && overlaps(appt.starts_at, appt.ends_at, slot.start, slot.end)));
+  };
 
   const handleCreateAppointment = async () => {
     if (!patient || !selectedDate || !selectedTime) {
@@ -58,6 +72,12 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
       const [hours, minutes] = selectedTime.split(':').map(Number);
       const startDateTime = setMinutes(setHours(selectedDate, hours), minutes);
       const endDateTime = addMinutes(startDateTime, 30); // Default 30 minutes
+
+      // Check provider conflict
+      if (selectedProvider && isSlotConflictingForProvider({ start: startDateTime, end: endDateTime }, selectedProvider)) {
+        toast({ title: 'Provider conflict', description: 'Selected provider is not available at this time', variant: 'destructive' });
+        return;
+      }
 
       await createAppointmentMutation.mutateAsync({
         patient_id: patient.id,
@@ -83,6 +103,25 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
     }
   };
 
+  const findNearestAvailable = () => {
+    if (!slots || slots.length === 0) return null;
+    for (const slot of slots) {
+      if (mode === 'per') {
+        if (!selectedProvider) return null; // require provider in per-provider mode
+        if (!isSlotConflictingForProvider(slot, selectedProvider)) {
+          return { slot, provider: selectedProvider };
+        }
+      } else {
+        // all providers mode: find any provider free
+        const freeProvider = providers.find((p: any) => !dayAppointments.some((appt: any) => appt.provider_id === p.id && overlaps(appt.starts_at, appt.ends_at, slot.start, slot.end)));
+        if (freeProvider) {
+          return { slot, provider: freeProvider.id };
+        }
+      }
+    }
+    return null;
+  };
+
   const selectedProviderData = providers.find(p => p.id === selectedProvider);
   const selectedRoomData = rooms.find(r => r.id === selectedRoom);
 
@@ -104,26 +143,52 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
                 selected={selectedDate}
                 onSelect={setSelectedDate}
                 className="rounded-md border"
-                disabled={(date) => date < new Date()}
+                disabled={(date) => date < startOfDay(new Date())}
               />
             </div>
 
             {/* Time Slots */}
             {selectedDate && (
               <div>
-                <h3 className="font-medium mb-2">Select Time</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium mb-2">Select Time</h3>
+                  <div>
+                    <Button size="sm" variant="outline" onClick={() => {
+                      if (mode === 'per' && !selectedProvider) {
+                        toast({ title: 'Select provider', description: 'Please select a provider in Per Provider mode', variant: 'destructive' });
+                        return;
+                      }
+
+                      const found = findNearestAvailable();
+                      if (found) {
+                        const timeStr = format(found.slot.start, 'HH:mm');
+                        setSelectedTime(timeStr);
+                        if (!selectedProvider && found.provider) setSelectedProvider(found.provider);
+                      } else {
+                        toast({ title: 'No available slots', description: 'No available times found in clinic availability', variant: 'destructive' });
+                      }
+                    }}>Nearest Available</Button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-                  {timeSlots.map((time) => (
-                    <Button
-                      key={time}
-                      variant={selectedTime === time ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedTime(time)}
-                      className="text-xs"
-                    >
-                      {time}
-                    </Button>
-                  ))}
+                  {slots.map((slot: any) => {
+                    const timeStr = format(slot.start, 'HH:mm');
+                    const disabled = selectedProvider ? isSlotConflictingForProvider(slot, selectedProvider) : isSlotTakenByAllProviders(slot);
+
+                    return (
+                      <Button
+                        key={timeStr}
+                        variant={selectedTime === timeStr ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => !disabled && setSelectedTime(timeStr)}
+                        disabled={disabled}
+                        className="text-xs"
+                      >
+                        {timeStr}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -131,7 +196,13 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
             {/* Filters */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Provider</label>
+                <label className="block text-sm font-medium mb-2">Mode</label>
+                <div className="flex gap-2">
+                  <Button size="sm" variant={"outline"} onClick={() => setMode('all')} className={mode === 'all' ? 'bg-muted' : ''}>All Providers</Button>
+                  <Button size="sm" variant={"outline"} onClick={() => setMode('per')} className={mode === 'per' ? 'bg-muted' : ''}>Per Provider</Button>
+                </div>
+
+                <label className="block text-sm font-medium mb-2 mt-3">Provider</label>
                 <Select value={selectedProvider} onValueChange={setSelectedProvider}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select provider" />

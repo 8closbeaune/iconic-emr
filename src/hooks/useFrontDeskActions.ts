@@ -13,7 +13,7 @@ export function useSearchPatients(term: string) {
 
       let query = supabase
         .from('patients')
-        .select('id, arabic_full_name, phone, status, created_at')
+        .select('id, arabic_full_name, phone, status, created_at, appointments(starts_at, status)')
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -25,7 +25,33 @@ export function useSearchPatients(term: string) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      const rows = (data || []) as any[];
+
+      // Determine today range
+      const today = new Date();
+      const start = startOfDay(today);
+      const end = endOfDay(today);
+
+      // Map to expected SearchResult shape, prefer appointment status for today if exists
+      const mapped = rows.map(r => {
+        let status = r.status;
+        if (r.appointments && r.appointments.length) {
+          const todayAppt = r.appointments.find((a: any) => {
+            const starts = new Date(a.starts_at);
+            return starts >= start && starts <= end;
+          });
+          if (todayAppt) status = todayAppt.status;
+        }
+        return {
+          id: r.id,
+          arabic_full_name: r.arabic_full_name,
+          phone: r.phone,
+          status,
+          created_at: r.created_at,
+        };
+      });
+
+      return mapped;
     },
     // Always enabled: show latest patients by default, live update as user types
     enabled: true,

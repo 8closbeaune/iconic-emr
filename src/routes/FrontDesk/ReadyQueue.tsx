@@ -66,95 +66,70 @@ function SortablePatient({ item, index, onPatientSelect, onStartVisit, isStartin
     transition,
   } = useSortable({ id: item.id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="bg-background border rounded-lg p-3 hover:bg-muted/50 transition-colors"
-    >
-      {/* Queue Position with Drag Handle */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
+    <div ref={setNodeRef} style={style} className="flex flex-col bg-background border rounded-lg hover:bg-muted/50 transition-colors">
+      <div className="p-3 pt-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded">
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <Badge variant="outline" className="text-xs">
+              #{index + 1} in queue
+            </Badge>
           </div>
-          <Badge variant="outline" className="text-xs">
-            #{index + 1} in queue
+
+          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+            Ready
           </Badge>
         </div>
-        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-          Ready
-        </Badge>
-      </div>
 
-      {/* Patient Info */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <User className="h-4 w-4 text-muted-foreground shrink-0" />
-            <h3 className="font-medium text-sm truncate">
-              {item.patients.arabic_full_name}
-            </h3>
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <User className="h-4 w-4 text-muted-foreground shrink-0" />
+              <h3 className="font-medium text-sm truncate">{item.patients.arabic_full_name}</h3>
+            </div>
+
+            {item.patients.phone && (
+              <div className="text-xs text-muted-foreground break-words">{item.patients.phone}</div>
+            )}
           </div>
-          
-          {item.patients.phone && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Phone className="h-3 w-3" />
-              <span>{item.patients.phone}</span>
+        </div>
+
+        <div className="space-y-1 mb-2 text-xs text-muted-foreground">
+          {item.providers && (
+            <div className="flex items-center gap-2">
+              <Stethoscope className="h-3 w-3" />
+              <span>{item.providers.display_name}</span>
+            </div>
+          )}
+          {item.rooms && (
+            <div className="flex items-center gap-2">
+              <MapPin className="h-3 w-3" />
+              <span>{item.rooms.name}</span>
             </div>
           )}
         </div>
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span>Ready for {formatDistanceToNow(new Date(item.patients.updated_at))}</span>
+        </div>
       </div>
 
-      {/* Provider & Room */}
-      <div className="space-y-1 mb-2 text-xs text-muted-foreground">
-        {item.providers && (
-          <div className="flex items-center gap-2">
-            <Stethoscope className="h-3 w-3" />
-            <span>{item.providers.display_name}</span>
-          </div>
-        )}
-        {item.rooms && (
-          <div className="flex items-center gap-2">
-            <MapPin className="h-3 w-3" />
-            <span>{item.rooms.name}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Wait Time */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-        <Clock className="h-3 w-3" />
-        <span>Ready for {formatDistanceToNow(new Date(item.patients.updated_at))}</span>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          onClick={() => onStartVisit(item)}
-          disabled={isStarting}
-          className="flex-1 text-xs bg-green-600 hover:bg-green-700"
-        >
+      <div className="mt-auto border-t px-4 py-2 flex items-center gap-2">
+        <Button size="sm" onClick={() => onStartVisit(item)} disabled={isStarting} className="flex-1 text-xs bg-green-600 hover:bg-green-700">
           <Play className="mr-1 h-3 w-3" />
           Start Visit
         </Button>
-        
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => onPatientSelect(item.patients.id)}
-          className="text-xs"
-        >
+
+        <Button size="sm" variant="outline" onClick={() => onPatientSelect(item.patients.id)} className="text-xs">
           <User className="mr-1 h-3 w-3" />
           View
         </Button>
@@ -301,7 +276,13 @@ export default function ReadyQueue({ searchTerm, onPatientSelect }: ReadyQueuePr
         title: "Visit started",
         description: "Patient moved to clinical console",
       });
+      // Invalidate all front desk related queries to refresh lists
+      queryClient.invalidateQueries({ queryKey: ['today-appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['arrived-queue'] });
       queryClient.invalidateQueries({ queryKey: ['ready-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['in-chair-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['completed-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] });
     },
     onError: (error) => {
       console.error('Error starting visit:', error);
@@ -353,7 +334,7 @@ export default function ReadyQueue({ searchTerm, onPatientSelect }: ReadyQueuePr
 
   if (items.length === 0) {
     return (
-      <div className="p-4 text-center text-muted-foreground">
+      <div className="p-4 text-center text-muted-foreground flex items-center justify-center h-full">
         <Stethoscope className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">No patients ready for visit</p>
         {searchTerm && (
@@ -363,44 +344,60 @@ export default function ReadyQueue({ searchTerm, onPatientSelect }: ReadyQueuePr
     );
   }
 
-  // Group items by provider
-  const groups = items.reduce((acc: Record<string, { label: string; items: ReadyItem[] }>, it) => {
-    const key = it.providers?.display_name ? it.providers.display_name : 'Unassigned';
-    if (!acc[key]) acc[key] = { label: key, items: [] };
+  // Group items by provider id (preserve provider id for keys)
+  const groupsMap = items.reduce((acc: Record<string, { providerId: string; providerName: string; items: ReadyItem[] }>, it) => {
+    const key = it.provider_id || 'unassigned';
+    if (!acc[key]) acc[key] = { providerId: key, providerName: it.providers?.display_name || 'Unassigned', items: [] };
     acc[key].items.push(it);
     return acc;
-  }, {});
+  }, {} as Record<string, { providerId: string; providerName: string; items: ReadyItem[] }>);
+
+  const lanes = Object.values(groupsMap).filter(g => g.items.length > 0);
 
   return (
-    <div className="space-y-4 p-2">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Object.values(groups).map((group) => (
-            <div key={group.label} className="bg-muted/10 rounded-md p-2">
-              <div className="text-xs font-medium mb-2 px-1">
-                {group.label}
+    <div className="h-full p-2">
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        {lanes.length === 0 ? (
+          <div className="h-full">
+            <div className="h-full grid place-items-center text-muted-foreground">
+              <div className="text-center">
+                <Stethoscope className="mx-auto mb-2 h-7 w-7 opacity-60" />
+                <p>No patients ready for visit</p>
+                {searchTerm && <p className="text-xs mt-1">No results for "{searchTerm}"</p>}
               </div>
-              <SortableContext items={group.items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {group.items.map((item, index) => (
-                    <SortablePatient
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      onPatientSelect={onPatientSelect}
-                      onStartVisit={handleStartVisit}
-                      isStarting={startVisitMutation.isPending}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
             </div>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className="gap-4 h-full" style={{ display: 'grid', gridTemplateColumns: `repeat(${lanes.length}, minmax(0, 1fr))` }}>
+            {lanes.map((lane) => (
+              <div key={lane.providerId} className="h-full">
+                <div className="h-full flex flex-col rounded-md">
+                  <div className="text-xs font-medium mb-2 px-1 flex items-center justify-between">
+                    <div>{lane.providerName}</div>
+                    <Badge variant="secondary">{lane.items.length} in queue</Badge>
+                  </div>
+
+                  <div className="h-full bg-muted/10 rounded-md overflow-hidden">
+                    <SortableContext items={lane.items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
+                      <div className="p-2 space-y-2 h-full overflow-y-auto min-h-0">
+                        {lane.items.map((item, index) => (
+                          <SortablePatient
+                            key={item.id}
+                            item={item}
+                            index={index}
+                            onPatientSelect={onPatientSelect}
+                            onStartVisit={handleStartVisit}
+                            isStarting={startVisitMutation.isPending}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </DndContext>
     </div>
   );

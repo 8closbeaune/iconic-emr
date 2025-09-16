@@ -40,14 +40,27 @@ export function AvailabilityEditor() {
     }
   }, [settings]);
 
-  // Auto-save when local availability changes
+  // Auto-save when local availability changes (only when different from persisted settings)
   useEffect(() => {
     if (localAvailability && settings) {
-      debouncedSave({
-        availability: localAvailability,
-        timezone: localAvailability.timezone,
-        slot_minutes: localAvailability.slot_minutes,
-      });
+      try {
+        const localStr = JSON.stringify(localAvailability);
+        const settingsStr = JSON.stringify(settings.availability);
+        if (localStr !== settingsStr) {
+          debouncedSave({
+            availability: localAvailability,
+            timezone: localAvailability.timezone,
+            slot_minutes: localAvailability.slot_minutes,
+          });
+        }
+      } catch (err) {
+        // Fallback to saving if stringify fails for some reason
+        debouncedSave({
+          availability: localAvailability,
+          timezone: localAvailability.timezone,
+          slot_minutes: localAvailability.slot_minutes,
+        });
+      }
     }
   }, [localAvailability, debouncedSave, settings]);
 

@@ -82,50 +82,50 @@ export default function PatientSearchStep({ onSearchResults, onSelectExisting }:
         </form>
 
         <div className="space-y-3">
+          <div>
+          <h3 className="font-medium text-sm">
+            {searchTerm.trim() ? `Found ${searchResults.length} patients:` : 'Latest patients'}
+          </h3>
+
           {searchResults.length > 0 ? (
-            <>
-              <h3 className="font-medium text-sm">
-                {searchTerm.trim() ? `Found ${searchResults.length} patients:` : 'Latest patients'}
-              </h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {searchResults.map((patient) => (
-                  <Card key={patient.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm" dir="rtl">
-                            {patient.arabic_full_name}
+            <div className="space-y-2 max-h-60 overflow-y-auto mt-2">
+              {searchResults.map((patient) => (
+                <Card key={patient.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="font-medium text-sm" dir="rtl">
+                          {patient.arabic_full_name}
+                        </div>
+                        {patient.phone && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <Phone className="h-3 w-3" />
+                            {patient.phone}
                           </div>
-                          {patient.phone && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                              <Phone className="h-3 w-3" />
-                              {patient.phone}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge className={getStatusColor(patient.status)}>
-                              {getStatusLabel(patient.status)}
-                            </Badge>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Calendar className="h-3 w-3" />
-                              {format(new Date(patient.created_at), 'MMM d, yyyy')}
-                            </div>
+                        )}
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge className={getStatusColor(patient.status)}>
+                            {getStatusLabel(patient.status)}
+                          </Badge>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            {format(new Date(patient.created_at), 'MMM d, yyyy')}
                           </div>
                         </div>
-                        <Button 
-                          size="sm" 
-                          onClick={() => onSelectExisting(patient)}
-                        >
-                          Select
-                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </>
+                      <Button
+                        size="sm"
+                        onClick={() => onSelectExisting(patient)}
+                      >
+                        Select
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : (
-            <div className="text-center py-8 space-y-3">
+            <div className="text-center py-8 space-y-3 mt-2">
               <UserPlus className="h-12 w-12 text-muted-foreground mx-auto" />
               <div>
                 <h3 className="font-medium">No patients found</h3>
@@ -133,12 +133,17 @@ export default function PatientSearchStep({ onSearchResults, onSelectExisting }:
                   Create a new patient with the search term
                 </p>
               </div>
-              <Button className="w-full" onClick={() => onSearchResults([], searchTerm)}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Create New Patient
-              </Button>
             </div>
           )}
+
+          {/* Always show create new patient button */}
+          <div className="mt-3">
+            <Button className="w-full" onClick={() => onSearchResults([], searchTerm)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Create New Patient
+            </Button>
+          </div>
+        </div>
         </div>
       </div>
     </>
