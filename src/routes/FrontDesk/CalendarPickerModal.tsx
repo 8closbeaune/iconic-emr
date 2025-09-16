@@ -155,6 +155,11 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
                   <h3 className="font-medium mb-2">Select Time</h3>
                   <div>
                     <Button size="sm" variant="outline" onClick={() => {
+                      if (mode === 'per' && !selectedProvider) {
+                        toast({ title: 'Select provider', description: 'Please select a provider in Per Provider mode', variant: 'destructive' });
+                        return;
+                      }
+
                       const found = findNearestAvailable();
                       if (found) {
                         const timeStr = format(found.slot.start, 'HH:mm');
