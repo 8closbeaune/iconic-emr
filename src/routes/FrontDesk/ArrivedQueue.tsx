@@ -123,16 +123,16 @@ export default function ArrivedQueue({ searchTerm, onPatientSelect }: ArrivedQue
 
           {/* Provider & Room (if any) */}
           <div className="space-y-1 mb-2 text-xs text-muted-foreground">
-            {apptsMap?.[patient.id]?.providers && (
+            {patient.provider && (
               <div className="flex items-center gap-2">
                 <Stethoscope className="h-3 w-3" />
-                <span>{apptsMap[patient.id].providers.display_name}</span>
+                <span>{patient.provider.display_name}</span>
               </div>
             )}
-            {apptsMap?.[patient.id]?.rooms && (
+            {patient.room && (
               <div className="flex items-center gap-2">
                 <MapPin className="h-3 w-3" />
-                <span>{apptsMap[patient.id].rooms.name}</span>
+                <span>{patient.room.name}</span>
               </div>
             )}
           </div>
