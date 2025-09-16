@@ -33,18 +33,12 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
   const createAppointmentMutation = useCreateAppointmentPlanned();
 
   // Availability & conflicts
-  const { getAvailableSlots } = require('@/hooks/useAvailabilityValidation') as any;
-  // Fetch appointments for the selected date to check provider conflicts
-  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+  const { getAvailableSlots } = useAvailabilityValidation();
 
-  const { data: dayAppointments = [] } = (() => {
-    if (!selectedDate) return { data: [] } as any;
-    const start = startOfDay(selectedDate);
-    const end = endOfDay(selectedDate);
-    const { useCalendarAppointments } = require('@/hooks/useCalendarData') as any;
-    return useCalendarAppointments(start, end, {} as any);
-  })();
+  // Appointments for the selected date to check provider conflicts
+  const start = selectedDate ? startOfDay(selectedDate) : startOfDay(new Date());
+  const end = selectedDate ? endOfDay(selectedDate) : endOfDay(new Date());
+  const { data: dayAppointments = [] } = useCalendarAppointments(start, end, {});
 
   const slots = selectedDate ? getAvailableSlots(selectedDate, selectedRoom) : [];
 
