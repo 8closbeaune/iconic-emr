@@ -301,7 +301,13 @@ export default function ReadyQueue({ searchTerm, onPatientSelect }: ReadyQueuePr
         title: "Visit started",
         description: "Patient moved to clinical console",
       });
+      // Invalidate all front desk related queries to refresh lists
+      queryClient.invalidateQueries({ queryKey: ['today-appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['arrived-queue'] });
       queryClient.invalidateQueries({ queryKey: ['ready-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['in-chair-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['completed-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['calendar-appointments'] });
     },
     onError: (error) => {
       console.error('Error starting visit:', error);
