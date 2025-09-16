@@ -344,44 +344,60 @@ export default function ReadyQueue({ searchTerm, onPatientSelect }: ReadyQueuePr
     );
   }
 
-  // Group items by provider
-  const groups = items.reduce((acc: Record<string, { label: string; items: ReadyItem[] }>, it) => {
-    const key = it.providers?.display_name ? it.providers.display_name : 'Unassigned';
-    if (!acc[key]) acc[key] = { label: key, items: [] };
+  // Group items by provider id (preserve provider id for keys)
+  const groupsMap = items.reduce((acc: Record<string, { providerId: string; providerName: string; items: ReadyItem[] }>, it) => {
+    const key = it.provider_id || 'unassigned';
+    if (!acc[key]) acc[key] = { providerId: key, providerName: it.providers?.display_name || 'Unassigned', items: [] };
     acc[key].items.push(it);
     return acc;
-  }, {});
+  }, {} as Record<string, { providerId: string; providerName: string; items: ReadyItem[] }>);
+
+  const lanes = Object.values(groupsMap).filter(g => g.items.length > 0);
 
   return (
-    <div className="space-y-4 p-2">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Object.values(groups).map((group) => (
-            <div key={group.label} className="bg-muted/10 rounded-md p-2">
-              <div className="text-xs font-medium mb-2 px-1">
-                {group.label}
+    <div className="h-full p-2">
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        {lanes.length === 0 ? (
+          <div className="h-full">
+            <div className="h-full grid place-items-center text-muted-foreground">
+              <div className="text-center">
+                <Stethoscope className="mx-auto mb-2 h-7 w-7 opacity-60" />
+                <p>No patients ready for visit</p>
+                {searchTerm && <p className="text-xs mt-1">No results for "{searchTerm}"</p>}
               </div>
-              <SortableContext items={group.items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {group.items.map((item, index) => (
-                    <SortablePatient
-                      key={item.id}
-                      item={item}
-                      index={index}
-                      onPatientSelect={onPatientSelect}
-                      onStartVisit={handleStartVisit}
-                      isStarting={startVisitMutation.isPending}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
             </div>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className="gap-4 h-full" style={{ display: 'grid', gridTemplateColumns: `repeat(${lanes.length}, minmax(0, 1fr))` }}>
+            {lanes.map((lane) => (
+              <div key={lane.providerId} className="h-full">
+                <div className="h-full flex flex-col rounded-md">
+                  <div className="text-xs font-medium mb-2 px-1 flex items-center justify-between">
+                    <div>{lane.providerName}</div>
+                    <Badge variant="secondary">{lane.items.length} in queue</Badge>
+                  </div>
+
+                  <div className="h-full bg-muted/10 rounded-md overflow-hidden">
+                    <SortableContext items={lane.items.map((it) => it.id)} strategy={verticalListSortingStrategy}>
+                      <div className="p-2 space-y-2 h-full overflow-y-auto min-h-0">
+                        {lane.items.map((item, index) => (
+                          <SortablePatient
+                            key={item.id}
+                            item={item}
+                            index={index}
+                            onPatientSelect={onPatientSelect}
+                            onStartVisit={handleStartVisit}
+                            isStarting={startVisitMutation.isPending}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </DndContext>
     </div>
   );
