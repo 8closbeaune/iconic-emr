@@ -137,10 +137,10 @@ export default function FrontDesk() {
           </div>
 
           {/* Row 2: Right stack */}
-           // <div className="col-span-12 md:col-span-3 space-y-6">
+           
            <div className="col-span-12 md:col-span-3">
             {/* In-Chair */}
-            // <div className="min-h-[240px] h-full flex flex-col rounded-lg border bg-card">
+            
             <div className="flex-1 h-full flex flex-col rounded-lg border bg-card">
               <div className="border-b p-3">
                 <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function FrontDesk() {
             </div>
 
             {/* Completed */}
-            // <div className="min-h-[240px] h-full flex flex-col rounded-lg border bg-card">
+            
             <div className="flex-1 h-full flex flex-col rounded-lg border bg-card">
               <div className="border-b p-3">
                 <div className="flex items-center gap-2">
