@@ -111,7 +111,7 @@ export default function FrontDesk() {
                   <span className="text-xs text-muted-foreground">Waiting for intake</span>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto min-h-0 p-2">
                 <ArrivedQueue
                   searchTerm=""
                   onPatientSelect={handlePatientSelect}
