@@ -13,7 +13,7 @@ export function useSearchPatients(term: string) {
 
       let query = supabase
         .from('patients')
-        .select('id, arabic_full_name, phone, status, created_at')
+        .select('id, arabic_full_name, phone, status, created_at, appointments(starts_at, status)')
         .order('created_at', { ascending: false })
         .limit(20);
 
