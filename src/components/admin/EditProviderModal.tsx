@@ -14,6 +14,7 @@ const editProviderSchema = z.object({
   display_name: z.string().min(2, 'Display name is required'),
   specialty: z.string().optional(),
   user_id: z.string().optional(),
+  default_room_id: z.string().nullable().optional(),
 });
 
 type EditProviderFormData = z.infer<typeof editProviderSchema>;
