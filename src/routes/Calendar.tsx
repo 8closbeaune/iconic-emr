@@ -396,8 +396,7 @@ export default function Calendar() {
             events={events}
             startAccessor="start"
             endAccessor="end"
-            view={currentView}
-            onView={handleViewChange}
+            {...(currentView !== 'agenda' ? { view: currentView as View, onView: (v: any)=>handleViewChange(v) } : {})}
             date={currentDate}
             onNavigate={handleNavigate}
             onSelectSlot={handleSelectSlot}
