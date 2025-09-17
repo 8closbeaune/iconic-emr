@@ -109,7 +109,7 @@ export function useProviders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('providers')
-        .select('id, display_name, specialty, active')
+        .select('id, display_name, specialty, active, default_room_id')
         .eq('active', true)
         .order('display_name', { ascending: true });
       
