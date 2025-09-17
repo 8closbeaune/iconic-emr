@@ -53,14 +53,24 @@ export function PasswordChangeModal({ open, onOpenChange, required = false }: Pa
       if (error) throw error;
 
       // Update the profile to clear the must_change_password flag
-      const { data: currentUser } = await supabase.auth.getUser();
-      if (currentUser.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ must_change_password: false })
-          .eq('user_id', currentUser.user.id);
+      try {
+        const result = await supabase.auth.getUser();
+        const currentUser = result?.data?.user ?? null;
+        if (currentUser) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ must_change_password: false })
+            .eq('user_id', currentUser.id);
 
-        if (profileError) console.error('Profile update error:', profileError);
+          if (profileError) console.error('Profile update error:', profileError);
+        }
+      } catch (err: any) {
+        // If session is missing just log and continue
+        if (err?.name === 'AuthSessionMissingError' || String(err)?.includes('Auth session missing')) {
+          console.warn('No active auth session after password update. Skipping profile update.');
+        } else {
+          console.error('Error fetching user after password update:', err);
+        }
       }
 
       toast({
