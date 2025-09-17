@@ -174,8 +174,18 @@ export default function Calendar() {
     const providerName = (event as any).provider_name || appt.providers?.display_name;
     const roomName = (event as any).room_name || appt.rooms?.name;
 
+    // Render compact content for month view (no action buttons or large chips)
+    if (currentView === 'month') {
+      return (
+        <div className="p-1 rounded text-sm text-white/95 custom-event-month" style={{ backgroundColor: bg, borderLeft: `4px solid ${bg}` }}>
+          <div className="font-semibold truncate" dir="rtl">{(event as any).patient_name_ar}</div>
+          <div className="opacity-90 text-xs">{format(event.start, 'HH:mm')}</div>
+        </div>
+      );
+    }
+
     return (
-      <div className="p-2 rounded text-sm text-white/95" style={{ backgroundColor: bg, borderLeft: `4px solid ${bg}` }}>
+      <div className="p-2 rounded text-sm text-white/95 custom-event" style={{ backgroundColor: bg, borderLeft: `4px solid ${bg}` }}>
         <div className="font-semibold truncate" dir="rtl">{(event as any).patient_name_ar}</div>
         <div className="opacity-90 text-xs">{format(event.start, 'HH:mm')}–{format(event.end, 'HH:mm')}</div>
         <div className="opacity-90 truncate text-xs">{roomName}{roomName && providerName ? ' · ' : ''}{providerName}</div>
