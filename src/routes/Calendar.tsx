@@ -147,7 +147,7 @@ export default function Calendar() {
   };
 
   // Handle view change
-  const handleViewChange = (view: View) => {
+  const handleViewChange = (view: string) => {
     setCurrentView(view);
   };
 
