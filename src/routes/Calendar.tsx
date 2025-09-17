@@ -26,6 +26,8 @@ import AppointmentDetailsDrawer from '@/components/Calendar/AppointmentDetailsDr
 import { exportAppointmentsToCSV, exportAppointmentsToPDF, getExportFilename } from '@/utils/calendarExport';
 import { useToast } from '@/hooks/use-toast';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from 'date-fns';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar as DayCalendar } from '@/components/ui/calendar';
 
 const localizer = momentLocalizer(moment);
 
@@ -329,12 +331,29 @@ export default function Calendar() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
-          <h2 className="text-lg font-semibold min-w-48 text-center">
-            {format(currentDate, currentView === 'month' ? 'MMMM yyyy' :
-                   currentView === 'week' ? "'Week of' MMM d, yyyy" :
-                   currentView === 'agenda' ? 'EEEE, MMM d, yyyy' :
-                   'EEEE, MMM d, yyyy')}
-          </h2>
+          <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-lg font-semibold min-w-48 text-center p-0 h-auto">
+                {format(currentDate, currentView === 'month' ? 'MMMM yyyy' :
+                       currentView === 'week' ? "'Week of' MMM d, yyyy" :
+                       currentView === 'agenda' ? 'EEEE, MMM d, yyyy' :
+                       'EEEE, MMM d, yyyy')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <DayCalendar
+                mode="single"
+                selected={currentDate}
+                onSelect={(d) => {
+                  if (d) {
+                    const newDate = d as Date;
+                    handleNavigate(newDate);
+                    setIsDatePickerOpen(false);
+                  }
+                }}
+              />
+            </PopoverContent>
+          </Popover>
 
           <Button
             variant="outline"
