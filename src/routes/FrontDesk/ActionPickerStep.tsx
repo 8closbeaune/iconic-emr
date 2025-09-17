@@ -29,6 +29,15 @@ export default function ActionPickerStep({ patient, onWalkIn, onAppointment, onC
   const [roomId, setRoomId] = useState('');
   const [notes, setNotes] = useState('');
 
+  // When provider changes, auto-select their default room if available (but allow modifying)
+  useEffect(() => {
+    if (!providerId) return;
+    const p = providers.find(pr => pr.id === providerId);
+    if (p?.default_room_id) {
+      setRoomId(p.default_room_id);
+    }
+  }, [providerId, providers]);
+
   const isPatientAlreadyHere = 'status' in patient && ['arrived', 'ready'].includes(patient.status);
 
   const handleWalkIn = async () => {
