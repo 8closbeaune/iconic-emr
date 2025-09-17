@@ -44,7 +44,11 @@ export function QuickFinding({ visitId, patient }: QuickFindingProps) {
   const queryClient = useQueryClient();
   const [selectedTooth, setSelectedTooth] = useState<{ quadrant: string; number: number } | null>(null);
   const [currentToothSet, setCurrentToothSet] = useState<'primary' | 'permanent'>('permanent');
-  
+  const { profile } = useAppStore();
+  const role = profile?.role || '';
+  const canPlan = role === 'doctor' || role === 'admin';
+  const canEditFindings = role === 'assistant' || canPlan;
+
   const { diagnoses, treatments, getDiagnosisRules, getAllowedTreatments } = useCatalogData();
 
   const form = useForm<FindingFormData>({
