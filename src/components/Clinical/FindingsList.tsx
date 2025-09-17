@@ -201,6 +201,7 @@ export function FindingsList({ visitId, patient }: FindingsListProps) {
                           size="sm"
                           variant="ghost"
                           onClick={() => setEditingFinding(finding)}
+                          disabled={!canEditFindings}
                         >
                           <Edit3 className="h-4 w-4" />
                         </Button>
@@ -208,7 +209,7 @@ export function FindingsList({ visitId, patient }: FindingsListProps) {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleDelete(finding.id)}
-                          disabled={deleteFinding.isPending}
+                          disabled={deleteFinding.isPending || !canEditFindings}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
