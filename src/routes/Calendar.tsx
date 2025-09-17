@@ -338,7 +338,7 @@ export default function Calendar() {
 
         {/* View Toggle */}
         <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-          {(['month', 'week', 'day'] as View[]).map((view) => (
+          {(['month', 'week', 'day', 'agenda'] as View[]).map((view) => (
             <Button
               key={view}
               variant={currentView === view ? 'default' : 'ghost'}
