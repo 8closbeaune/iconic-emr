@@ -71,9 +71,9 @@ export default function ProvidersTable() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('providers')
-        .select('id, user_id, display_name, specialty, active')
+        .select('id, user_id, display_name, specialty, active, default_room_id')
         .order('display_name', { ascending: true });
-      
+
       if (error) throw error;
       return data as Provider[];
     },
