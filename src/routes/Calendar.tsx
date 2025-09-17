@@ -307,21 +307,36 @@ export default function Calendar() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleNavigate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+            onClick={() => {
+              let newDate = new Date(currentDate);
+              if (currentView === 'month') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+              else if (currentView === 'week') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7);
+              else if (currentView === 'day' || currentView === 'agenda') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1);
+              else newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+              handleNavigate(newDate);
+            }}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          
+
           <h2 className="text-lg font-semibold min-w-48 text-center">
-            {format(currentDate, currentView === 'month' ? 'MMMM yyyy' : 
-                   currentView === 'week' ? "'Week of' MMM d, yyyy" : 
+            {format(currentDate, currentView === 'month' ? 'MMMM yyyy' :
+                   currentView === 'week' ? "'Week of' MMM d, yyyy" :
+                   currentView === 'agenda' ? 'EEEE, MMM d, yyyy' :
                    'EEEE, MMM d, yyyy')}
           </h2>
-          
+
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleNavigate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+            onClick={() => {
+              let newDate = new Date(currentDate);
+              if (currentView === 'month') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+              else if (currentView === 'week') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7);
+              else if (currentView === 'day' || currentView === 'agenda') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
+              else newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+              handleNavigate(newDate);
+            }}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
