@@ -80,7 +80,7 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
 
       await createAppointmentMutation.mutateAsync({
         patient_id: patient.id,
-        provider_id: selectedProvider || undefined,
+        provider_id: selectedProvider && selectedProvider !== 'all' ? selectedProvider : undefined,
         room_id: selectedRoom || undefined,
         starts_at: startDateTime.toISOString(),
         ends_at: endDateTime.toISOString(),
@@ -121,7 +121,7 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
     return null;
   };
 
-  const selectedProviderData = providers.find(p => p.id === selectedProvider);
+  const selectedProviderData = selectedProvider === 'all' ? { display_name: 'All' } : providers.find(p => p.id === selectedProvider);
   const selectedRoomData = rooms.find(r => r.id === selectedRoom);
 
   return (
@@ -153,16 +153,11 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
                   <h3 className="font-medium mb-2">Select Time</h3>
                   <div>
                     <Button size="sm" variant="outline" onClick={() => {
-                      if (mode === 'per' && !selectedProvider) {
-                        toast({ title: 'Select provider', description: 'Please select a provider in Per Provider mode', variant: 'destructive' });
-                        return;
-                      }
-
                       const found = findNearestAvailable();
                       if (found) {
                         const timeStr = format(found.slot.start, 'HH:mm');
                         setSelectedTime(timeStr);
-                        if (!selectedProvider && found.provider) setSelectedProvider(found.provider);
+                        if ((!selectedProvider || selectedProvider === 'all') && found.provider) setSelectedProvider(found.provider);
                       } else {
                         toast({ title: 'No available slots', description: 'No available times found in clinic availability', variant: 'destructive' });
                       }
@@ -173,7 +168,7 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
                 <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
                   {slots.map((slot: any) => {
                     const timeStr = format(slot.start, 'HH:mm');
-                    const disabled = selectedProvider ? isSlotConflictingForProvider(slot, selectedProvider) : isSlotTakenByAllProviders(slot);
+                    const disabled = (!selectedProvider || selectedProvider === 'all') ? isSlotTakenByAllProviders(slot) : isSlotConflictingForProvider(slot, selectedProvider);
 
                     return (
                       <Button
