@@ -58,6 +58,7 @@ export default function Calendar() {
     provider?: string;
     room?: string;
   } | null>(null);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Calculate date range based on view
   const dateRange = useMemo(() => {
