@@ -24,8 +24,9 @@ interface AddProviderModalProps {
 }
 
 export function AddProviderModal({ open, onOpenChange }: AddProviderModalProps) {
-  const { createProvider, useStaff } = useAdmin();
+  const { createProvider, useStaff, useRooms } = useAdmin();
   const { data: staff } = useStaff();
+  const { data: rooms = [] } = useRooms();
 
   // Get doctors who aren't already providers
   const doctorStaff = staff?.filter(member => member.role === 'doctor') || [];
@@ -36,6 +37,7 @@ export function AddProviderModal({ open, onOpenChange }: AddProviderModalProps) 
       display_name: '',
       specialty: '',
       user_id: '',
+      default_room_id: null,
     },
   });
 
@@ -45,6 +47,7 @@ export function AddProviderModal({ open, onOpenChange }: AddProviderModalProps) 
         display_name: data.display_name,
         specialty: data.specialty || undefined,
         user_id: data.user_id === "NONE" ? undefined : data.user_id,
+        default_room_id: data.default_room_id && data.default_room_id !== 'NONE' ? data.default_room_id : null,
         active: true,
       });
       form.reset();
@@ -111,6 +114,30 @@ export function AddProviderModal({ open, onOpenChange }: AddProviderModalProps) 
                   <FormLabel>Specialty (Optional)</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Orthodontist, Endodontist" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="default_room_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default Clinic Room (Optional)</FormLabel>
+                  <FormControl>
+                    <Select onValueChange={field.onChange} value={field.value || 'NONE'}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select default room (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NONE">No default room</SelectItem>
+                        {rooms.map((room) => (
+                          <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
