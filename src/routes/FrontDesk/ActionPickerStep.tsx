@@ -10,6 +10,7 @@ import { SearchResult, CreatedPatient } from './AddPatientModal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useProviders, useRooms } from '@/hooks/useCalendarData';
+import { useEffect } from 'react';
 
 interface ActionPickerStepProps {
   patient: SearchResult | CreatedPatient;
