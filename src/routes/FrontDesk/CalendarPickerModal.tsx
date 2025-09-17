@@ -105,16 +105,16 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
   const findNearestAvailable = () => {
     if (!slots || slots.length === 0) return null;
     for (const slot of slots) {
-      if (mode === 'per') {
-        if (!selectedProvider) return null; // require provider in per-provider mode
-        if (!isSlotConflictingForProvider(slot, selectedProvider)) {
-          return { slot, provider: selectedProvider };
-        }
-      } else {
-        // all providers mode: find any provider free
+      // If selectedProvider is 'all' or empty, treat as any provider
+      if (!selectedProvider || selectedProvider === 'all') {
         const freeProvider = providers.find((p: any) => !dayAppointments.some((appt: any) => appt.provider_id === p.id && overlaps(appt.starts_at, appt.ends_at, slot.start, slot.end)));
         if (freeProvider) {
           return { slot, provider: freeProvider.id };
+        }
+      } else {
+        // specific provider selected
+        if (!isSlotConflictingForProvider(slot, selectedProvider)) {
+          return { slot, provider: selectedProvider };
         }
       }
     }
