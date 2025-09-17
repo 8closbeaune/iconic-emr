@@ -24,9 +24,8 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>('');
-  const [selectedProvider, setSelectedProvider] = useState<string>('');
+  const [selectedProvider, setSelectedProvider] = useState<string>('all');
   const [selectedRoom, setSelectedRoom] = useState<string>('');
-  const [mode, setMode] = useState<'all' | 'per'>('all');
 
   const { data: providers = [] } = useProviders();
   const { data: rooms = [] } = useRooms();
