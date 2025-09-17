@@ -91,15 +91,43 @@ export default function Calendar() {
     filters
   );
 
-  // Convert appointments to calendar events
+  // Provider color palette and deterministic mapping
+  const COLORS = ['#4f46e5','#16a34a','#06b6d4','#f59e0b','#ef4444','#8b5cf6','#10b981','#e11d48'];
+  const hash = (s: string) => s.split('').reduce((a,b)=>((a<<5)-a)+b.charCodeAt(0),0);
+  const colorFor = (provId: string | undefined) => {
+    if (!provId) return COLORS[0];
+    const idx = Math.abs(hash(provId)) % COLORS.length;
+    return COLORS[idx];
+  };
+
+  // Convert appointments to calendar events with extended props and local timezone parsing
   const events: CalendarEvent[] = useMemo(() => {
-    return appointments.map(appointment => ({
-      id: appointment.id,
-      title: appointment.patients.arabic_full_name,
-      start: new Date(appointment.starts_at),
-      end: new Date(appointment.ends_at),
-      resource: appointment,
-    }));
+    return appointments.map(appointment => {
+      const start = appointment.starts_at ? new Date(appointment.starts_at) : new Date();
+      let end = appointment.ends_at ? new Date(appointment.ends_at) : new Date(start.getTime() + 30*60000);
+      // Ensure end > start
+      if (end <= start) end = new Date(start.getTime() + 30*60000);
+
+      const providerId = appointment.provider_id || appointment.providers?.id;
+      const providerName = appointment.providers?.display_name || '';
+      const roomName = appointment.rooms?.name || '';
+
+      return {
+        id: appointment.id,
+        title: appointment.patients?.arabic_full_name || 'Patient',
+        start,
+        end,
+        resource: appointment,
+        // Extended props for rendering
+        patient_name_ar: appointment.patients?.arabic_full_name,
+        provider_id: providerId,
+        provider_name: providerName,
+        room_name: roomName,
+        status: appointment.status,
+        backgroundColor: colorFor(providerId as string | undefined),
+        borderColor: colorFor(providerId as string | undefined),
+      } as unknown as CalendarEvent;
+    });
   }, [appointments]);
 
   // Handle slot selection (clicking empty time slot)
