@@ -127,6 +127,15 @@ export default function AddAppointmentModal({
     }
   }, [watchedProviderId, watchedStartTime, watchedEndTime]);
 
+  // Auto-fill room when provider has a default room
+  useEffect(() => {
+    if (!watchedProviderId) return;
+    const provider = providers.find((p: any) => p.id === watchedProviderId);
+    if (provider?.default_room_id) {
+      setValue('room_id', provider.default_room_id);
+    }
+  }, [watchedProviderId, providers, setValue]);
+
   const onSubmit = async (data: AppointmentFormData) => {
     if (!currentClinic?.id) {
       toast({
