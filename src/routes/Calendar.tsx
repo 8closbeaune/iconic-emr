@@ -46,7 +46,7 @@ export default function Calendar() {
 
   // State
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState<View>('week');
+  const [currentView, setCurrentView] = useState<string>('week');
   const [filters, setFilters] = useState<CalendarFilters>({});
   const [selectedAppointment, setSelectedAppointment] = useState<CalendarAppointment | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
