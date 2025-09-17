@@ -32,15 +32,16 @@ export function useSearchPatients(term: string) {
       const start = startOfDay(today);
       const end = endOfDay(today);
 
-      // Map to expected SearchResult shape: prefer most recent appointment status if available, otherwise patient.status
+      // Map to expected SearchResult shape: prefer today's appointment status if available, otherwise patient.status
       const mapped = rows.map(r => {
         let status = r.status;
         if (r.appointments && r.appointments.length) {
-          // Sort appointments by starts_at desc and pick the most recent
-          const sorted = (r.appointments as any[]).slice().sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime());
-          const latestAppt = sorted[0];
-          if (latestAppt && latestAppt.status) {
-            status = latestAppt.status;
+          const todayAppt = r.appointments.find((a: any) => {
+            const starts = new Date(a.starts_at);
+            return starts >= start && starts <= end;
+          });
+          if (todayAppt && todayAppt.status) {
+            status = todayAppt.status;
           }
         }
         return {
