@@ -223,7 +223,7 @@ export function FindingsList({ visitId, patient }: FindingsListProps) {
         </CardContent>
       </Card>
 
-      {editingFinding && (
+      {editingFinding && canEditFindings && (
         <QuickFindingEditModal
           finding={editingFinding}
           patient={patient}
