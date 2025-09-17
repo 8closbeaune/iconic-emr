@@ -97,7 +97,8 @@ export function useAdmin() {
           .from('providers')
           .select(`
             *,
-            profiles(full_name)
+            profiles(full_name),
+            default_room_id
           `)
           .order('display_name');
 
