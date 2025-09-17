@@ -195,18 +195,13 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
             {/* Filters */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Mode</label>
-                <div className="flex gap-2">
-                  <Button size="sm" variant={"outline"} onClick={() => setMode('all')} className={mode === 'all' ? 'bg-muted' : ''}>All Providers</Button>
-                  <Button size="sm" variant={"outline"} onClick={() => setMode('per')} className={mode === 'per' ? 'bg-muted' : ''}>Per Provider</Button>
-                </div>
-
-                <label className="block text-sm font-medium mb-2 mt-3">Provider</label>
+                    <label className="block text-sm font-medium mb-2">Provider</label>
                 <Select value={selectedProvider} onValueChange={setSelectedProvider}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select provider" />
+                    <SelectValue placeholder="All" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
                     {providers.map((provider) => (
                       <SelectItem key={provider.id} value={provider.id}>
                         {provider.display_name}
