@@ -220,6 +220,51 @@ export default function Calendar() {
     setIsAddModalOpen(true);
   };
 
+  // Agenda Day view component
+  function groupByHourThenProvider(events: CalendarEvent[]) {
+    const groups: Record<string, any[]> = {};
+    events.forEach(ev => {
+      const hour = format(ev.start, 'HH:00');
+      if (!groups[hour]) groups[hour] = [];
+      groups[hour].push(ev);
+    });
+    // For each hour sort by start
+    return Object.keys(groups).sort().map(hour => ({ hour, items: groups[hour].sort((a,b)=>a.start.getTime()-b.start.getTime()) }));
+  }
+
+  function AgendaDay({ date, events, colorFor, onOpen }: { date: Date; events: CalendarEvent[]; colorFor: any; onOpen: (id:string)=>void }) {
+    const groups = groupByHourThenProvider(events.filter(e => e.start.toDateString() === date.toDateString()));
+    return (
+      <div className="space-y-4">
+        {groups.map(g => (
+          <section key={g.hour}>
+            <h3 className="text-sm font-semibold mb-2">{g.hour}</h3>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {g.items.map((ev: any) => (
+                <div key={ev.id} className="border rounded-md p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium truncate">{(ev as any).patient_name_ar}</div>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] text-white" style={{ backgroundColor: colorFor(ev.provider_id) }}>
+                      {((ev as any).provider_name || '').split(' ').map((p:any)=>p[0]).join('').slice(0,3)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{format(ev.start, 'HH:mm')} - {format(ev.end, 'HH:mm')} · {ev.room_name}</div>
+                  <div className="mt-2"><span className={chipClass(ev.status)}>{prettyStatus(ev.status)}</span></div>
+                  <div className="mt-2 flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => onOpen(ev.id)}>View</Button>
+                    {ev.status === 'planned' && format(new Date(), 'yyyy-MM-dd') === format(ev.start, 'yyyy-MM-dd') && (
+                      <Button size="sm" onClick={() => onOpen(ev.id)}>Check-in</Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
