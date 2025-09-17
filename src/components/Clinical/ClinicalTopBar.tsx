@@ -182,16 +182,47 @@ export function ClinicalTopBar({ activePatient, activeVisit, onVisitChange }: Cl
         {/* Actions */}
         {activeVisit && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Checkout
-            </Button>
-            <Button variant="outline" size="sm">
-              <LogOut className="h-4 w-4 mr-2" />
-              Finish Visit
-            </Button>
-            <Button 
-              variant="ghost" 
+            {canPlan && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={completedCount === 0}
+                onClick={async () => {
+                  // Checkout flow placeholder - navigate to checkout or open drawer
+                  // For now just show toast and prevent action if no completed procedures
+                }}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Checkout
+              </Button>
+            )}
+
+            {canPlan && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (!activeVisit?.id) return;
+                  if (inProgressCount > 0) {
+                    const ok = window.confirm('There are procedures in progress. Do you want to finish the visit anyway?');
+                    if (!ok) return;
+                  }
+
+                  try {
+                    await finishVisit.mutateAsync({ visitId: activeVisit.id });
+                    onVisitChange(null);
+                  } catch (err) {
+                    console.error('Finish visit error', err);
+                  }
+                }}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Finish Visit
+              </Button>
+            )}
+
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => onVisitChange(null)}
             >
