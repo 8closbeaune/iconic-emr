@@ -2,8 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ListChecks, Forward, UserCheck, Clock3, LogOut, CreditCard } from 'lucide-react';
-import { useReadyQueue, useStartVisit, type ClinicalPatient, type ClinicalVisit } from '@/hooks/useClinicalWorkflow';
+import { useReadyQueue, useStartVisit, useFinishVisit, type ClinicalPatient, type ClinicalVisit } from '@/hooks/useClinicalWorkflow';
 import { useState } from 'react';
+import { useAppStore } from '@/store/appStore';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClinicalTopBarProps {
   activePatient: ClinicalPatient | null | undefined;
