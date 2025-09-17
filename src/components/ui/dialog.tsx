@@ -31,12 +31,22 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => {
-  const childrenArray = React.Children.toArray(children);
-  const hasTitle = childrenArray.some((child) => {
-    // check for Radix primitive title or our DialogTitle wrapper
-    const type = (child as any)?.type;
-    return type === DialogPrimitive.Title || type?.displayName === DialogPrimitive.Title.displayName || type?.displayName === 'DialogTitle';
-  });
+  const containsDialogTitle = (nodes: any): boolean => {
+    const arr = React.Children.toArray(nodes);
+    for (const node of arr) {
+      const type = (node as any)?.type;
+      if (type === DialogPrimitive.Title || type?.displayName === DialogPrimitive.Title.displayName || type?.displayName === 'DialogTitle') {
+        return true;
+      }
+      const childProps = (node as any)?.props;
+      if (childProps && childProps.children) {
+        if (containsDialogTitle(childProps.children)) return true;
+      }
+    }
+    return false;
+  };
+
+  const hasTitle = containsDialogTitle(children);
 
   return (
     <DialogPortal>
