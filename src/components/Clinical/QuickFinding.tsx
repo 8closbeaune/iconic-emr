@@ -111,6 +111,7 @@ export function QuickFinding({ visitId, patient }: QuickFindingProps) {
           tooth_number: data.tooth_number,
           xray_flag: data.xray_flag,
           notes: data.notes,
+          created_by: profile?.user_id || null,
         })
         .select('id')
         .single();
