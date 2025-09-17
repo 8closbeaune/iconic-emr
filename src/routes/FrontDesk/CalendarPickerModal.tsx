@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,9 +24,8 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>('');
-  const [selectedProvider, setSelectedProvider] = useState<string>('');
+  const [selectedProvider, setSelectedProvider] = useState<string>('all');
   const [selectedRoom, setSelectedRoom] = useState<string>('');
-  const [mode, setMode] = useState<'all' | 'per'>('all');
 
   const { data: providers = [] } = useProviders();
   const { data: rooms = [] } = useRooms();
@@ -81,7 +80,7 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
 
       await createAppointmentMutation.mutateAsync({
         patient_id: patient.id,
-        provider_id: selectedProvider || undefined,
+        provider_id: selectedProvider && selectedProvider !== 'all' ? selectedProvider : undefined,
         room_id: selectedRoom || undefined,
         starts_at: startDateTime.toISOString(),
         ends_at: endDateTime.toISOString(),
@@ -106,24 +105,33 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
   const findNearestAvailable = () => {
     if (!slots || slots.length === 0) return null;
     for (const slot of slots) {
-      if (mode === 'per') {
-        if (!selectedProvider) return null; // require provider in per-provider mode
-        if (!isSlotConflictingForProvider(slot, selectedProvider)) {
-          return { slot, provider: selectedProvider };
-        }
-      } else {
-        // all providers mode: find any provider free
+      // If selectedProvider is 'all' or empty, treat as any provider
+      if (!selectedProvider || selectedProvider === 'all') {
         const freeProvider = providers.find((p: any) => !dayAppointments.some((appt: any) => appt.provider_id === p.id && overlaps(appt.starts_at, appt.ends_at, slot.start, slot.end)));
         if (freeProvider) {
           return { slot, provider: freeProvider.id };
+        }
+      } else {
+        // specific provider selected
+        if (!isSlotConflictingForProvider(slot, selectedProvider)) {
+          return { slot, provider: selectedProvider };
         }
       }
     }
     return null;
   };
 
-  const selectedProviderData = providers.find(p => p.id === selectedProvider);
+  const selectedProviderData = selectedProvider === 'all' ? { display_name: 'All' } : providers.find(p => p.id === selectedProvider);
   const selectedRoomData = rooms.find(r => r.id === selectedRoom);
+
+  // When a provider is selected, auto-select their default room if available
+  useEffect(() => {
+    if (!selectedProvider || selectedProvider === 'all') return;
+    const p = providers.find((pr: any) => pr.id === selectedProvider);
+    if (p?.default_room_id) {
+      setSelectedRoom(p.default_room_id);
+    }
+  }, [selectedProvider, providers]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -154,16 +162,11 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
                   <h3 className="font-medium mb-2">Select Time</h3>
                   <div>
                     <Button size="sm" variant="outline" onClick={() => {
-                      if (mode === 'per' && !selectedProvider) {
-                        toast({ title: 'Select provider', description: 'Please select a provider in Per Provider mode', variant: 'destructive' });
-                        return;
-                      }
-
                       const found = findNearestAvailable();
                       if (found) {
                         const timeStr = format(found.slot.start, 'HH:mm');
                         setSelectedTime(timeStr);
-                        if (!selectedProvider && found.provider) setSelectedProvider(found.provider);
+                        if ((!selectedProvider || selectedProvider === 'all') && found.provider) setSelectedProvider(found.provider);
                       } else {
                         toast({ title: 'No available slots', description: 'No available times found in clinic availability', variant: 'destructive' });
                       }
@@ -174,7 +177,7 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
                 <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
                   {slots.map((slot: any) => {
                     const timeStr = format(slot.start, 'HH:mm');
-                    const disabled = selectedProvider ? isSlotConflictingForProvider(slot, selectedProvider) : isSlotTakenByAllProviders(slot);
+                    const disabled = (!selectedProvider || selectedProvider === 'all') ? isSlotTakenByAllProviders(slot) : isSlotConflictingForProvider(slot, selectedProvider);
 
                     return (
                       <Button
@@ -196,18 +199,13 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
             {/* Filters */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Mode</label>
-                <div className="flex gap-2">
-                  <Button size="sm" variant={"outline"} onClick={() => setMode('all')} className={mode === 'all' ? 'bg-muted' : ''}>All Providers</Button>
-                  <Button size="sm" variant={"outline"} onClick={() => setMode('per')} className={mode === 'per' ? 'bg-muted' : ''}>Per Provider</Button>
-                </div>
-
-                <label className="block text-sm font-medium mb-2 mt-3">Provider</label>
+                    <label className="block text-sm font-medium mb-2">Provider</label>
                 <Select value={selectedProvider} onValueChange={setSelectedProvider}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select provider" />
+                    <SelectValue placeholder="All" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
                     {providers.map((provider) => (
                       <SelectItem key={provider.id} value={provider.id}>
                         {provider.display_name}

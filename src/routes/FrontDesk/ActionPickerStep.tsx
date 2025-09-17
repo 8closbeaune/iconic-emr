@@ -10,6 +10,7 @@ import { SearchResult, CreatedPatient } from './AddPatientModal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useProviders, useRooms } from '@/hooks/useCalendarData';
+import { useEffect } from 'react';
 
 interface ActionPickerStepProps {
   patient: SearchResult | CreatedPatient;
@@ -27,6 +28,15 @@ export default function ActionPickerStep({ patient, onWalkIn, onAppointment, onC
   const [providerId, setProviderId] = useState('');
   const [roomId, setRoomId] = useState('');
   const [notes, setNotes] = useState('');
+
+  // When provider changes, auto-select their default room if available (but allow modifying)
+  useEffect(() => {
+    if (!providerId) return;
+    const p = providers.find(pr => pr.id === providerId);
+    if (p?.default_room_id) {
+      setRoomId(p.default_room_id);
+    }
+  }, [providerId, providers]);
 
   const isPatientAlreadyHere = 'status' in patient && ['arrived', 'ready'].includes(patient.status);
 

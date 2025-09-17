@@ -32,7 +32,7 @@ export function useSearchPatients(term: string) {
       const start = startOfDay(today);
       const end = endOfDay(today);
 
-      // Map to expected SearchResult shape, prefer appointment status for today if exists
+      // Map to expected SearchResult shape: prefer today's appointment status if available, otherwise patient.status
       const mapped = rows.map(r => {
         let status = r.status;
         if (r.appointments && r.appointments.length) {
@@ -40,7 +40,9 @@ export function useSearchPatients(term: string) {
             const starts = new Date(a.starts_at);
             return starts >= start && starts <= end;
           });
-          if (todayAppt) status = todayAppt.status;
+          if (todayAppt && todayAppt.status) {
+            status = todayAppt.status;
+          }
         }
         return {
           id: r.id,

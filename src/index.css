@@ -148,4 +148,16 @@ All colors MUST be HSL.
   .medical-transition {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
+
+  /* FullCalendar / BigCalendar event min height */
+  .rbc-event, .rbc-time-content .rbc-event {
+    min-height: 28px;
+  }
+
+  /* Allow multi-line event content and avoid overflow hiding */
+  .rbc-event .custom-event, .rbc-event .custom-event-month, .rbc-event-content {
+    white-space: normal !important;
+    overflow: visible !important;
+    line-height: 1.05;
+  }
 }

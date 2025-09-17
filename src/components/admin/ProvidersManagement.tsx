@@ -11,8 +11,9 @@ import { AddProviderModal } from './AddProviderModal';
 import { EditProviderModal } from './EditProviderModal';
 
 export function ProvidersManagement() {
-  const { useProviders, updateProvider } = useAdmin();
+  const { useProviders, updateProvider, useRooms } = useAdmin();
   const { data: providers, isLoading } = useProviders();
+  const { data: rooms = [] } = useRooms();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -75,6 +76,7 @@ export function ProvidersManagement() {
                 <TableHead>Display Name</TableHead>
                 <TableHead>Specialty</TableHead>
                 <TableHead>Linked Staff</TableHead>
+                <TableHead>Default Room</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
@@ -101,6 +103,13 @@ export function ProvidersManagement() {
                       </div>
                     ) : (
                       <span className="text-muted-foreground">Not linked</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {rooms.find(r => r.id === provider.default_room_id)?.name ? (
+                      <span>{rooms.find(r => r.id === provider.default_room_id)?.name}</span>
+                    ) : (
+                      <span className="text-muted-foreground">Not set</span>
                     )}
                   </TableCell>
                   <TableCell>

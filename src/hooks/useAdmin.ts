@@ -21,6 +21,7 @@ export interface ProviderProfile {
   user_id?: string;
   created_at: string;
   profiles?: { full_name?: string };
+  default_room_id?: string | null;
 }
 
 export interface Room {
@@ -97,7 +98,8 @@ export function useAdmin() {
           .from('providers')
           .select(`
             *,
-            profiles(full_name)
+            profiles(full_name),
+            default_room_id
           `)
           .order('display_name');
 

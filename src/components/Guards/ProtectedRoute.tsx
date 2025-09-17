@@ -17,14 +17,20 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Check auth state
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      
-      if (error) {
-        console.error('Auth check error:', error);
+      try {
+        const result = await supabase.auth.getUser();
+        const user = result?.data?.user ?? null;
+        setUser(user);
+      } catch (error: any) {
+        // supabase-js throws AuthSessionMissingError when there is no session
+        if (error?.name === 'AuthSessionMissingError' || String(error)?.includes('Auth session missing')) {
+          setUser(null);
+        } else {
+          console.error('Auth check error:', error);
+        }
+      } finally {
+        setAuthChecked(true);
       }
-      
-      setUser(user);
-      setAuthChecked(true);
     };
 
     checkAuth();

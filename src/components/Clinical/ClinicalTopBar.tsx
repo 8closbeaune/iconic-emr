@@ -2,8 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ListChecks, Forward, UserCheck, Clock3, LogOut, CreditCard } from 'lucide-react';
-import { useReadyQueue, useStartVisit, type ClinicalPatient, type ClinicalVisit } from '@/hooks/useClinicalWorkflow';
+import { useReadyQueue, useStartVisit, useFinishVisit, type ClinicalPatient, type ClinicalVisit } from '@/hooks/useClinicalWorkflow';
 import { useState } from 'react';
+import { useAppStore } from '@/store/appStore';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ClinicalTopBarProps {
   activePatient: ClinicalPatient | null | undefined;
@@ -14,7 +17,46 @@ interface ClinicalTopBarProps {
 export function ClinicalTopBar({ activePatient, activeVisit, onVisitChange }: ClinicalTopBarProps) {
   const { data: readyQueue } = useReadyQueue();
   const startVisit = useStartVisit();
+  const finishVisit = useFinishVisit();
+  const { profile } = useAppStore();
+  const role = profile?.role || '';
+  const canPlan = role === 'doctor' || role === 'admin';
+  const canEditFindings = role === 'assistant' || canPlan;
+
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
+
+  const { data: completedCountData } = useQuery({
+    queryKey: ['visit/completed-count', activeVisit?.id],
+    queryFn: async () => {
+      if (!activeVisit?.id) return 0;
+      const { count, error } = await supabase
+        .from('procedure_plan_rows')
+        .select('id', { count: 'exact' })
+        .eq('visit_id', activeVisit.id)
+        .eq('status', 'completed');
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!activeVisit?.id,
+  });
+
+  const { data: inProgressCountData } = useQuery({
+    queryKey: ['visit/inprogress-count', activeVisit?.id],
+    queryFn: async () => {
+      if (!activeVisit?.id) return 0;
+      const { count, error } = await supabase
+        .from('procedure_plan_rows')
+        .select('id', { count: 'exact' })
+        .eq('visit_id', activeVisit.id)
+        .eq('status', 'in_progress');
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!activeVisit?.id,
+  });
+
+  const completedCount = completedCountData || 0;
+  const inProgressCount = inProgressCountData || 0;
 
   const handleBringNext = async () => {
     if (!readyQueue?.length) return;
@@ -140,16 +182,47 @@ export function ClinicalTopBar({ activePatient, activeVisit, onVisitChange }: Cl
         {/* Actions */}
         {activeVisit && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Checkout
-            </Button>
-            <Button variant="outline" size="sm">
-              <LogOut className="h-4 w-4 mr-2" />
-              Finish Visit
-            </Button>
-            <Button 
-              variant="ghost" 
+            {canPlan && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={completedCount === 0}
+                onClick={async () => {
+                  // Checkout flow placeholder - navigate to checkout or open drawer
+                  // For now just show toast and prevent action if no completed procedures
+                }}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Checkout
+              </Button>
+            )}
+
+            {canPlan && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (!activeVisit?.id) return;
+                  if (inProgressCount > 0) {
+                    const ok = window.confirm('There are procedures in progress. Do you want to finish the visit anyway?');
+                    if (!ok) return;
+                  }
+
+                  try {
+                    await finishVisit.mutateAsync({ visitId: activeVisit.id });
+                    onVisitChange(null);
+                  } catch (err) {
+                    console.error('Finish visit error', err);
+                  }
+                }}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Finish Visit
+              </Button>
+            )}
+
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => onVisitChange(null)}
             >

@@ -26,6 +26,8 @@ import AppointmentDetailsDrawer from '@/components/Calendar/AppointmentDetailsDr
 import { exportAppointmentsToCSV, exportAppointmentsToPDF, getExportFilename } from '@/utils/calendarExport';
 import { useToast } from '@/hooks/use-toast';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays } from 'date-fns';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar as DayCalendar } from '@/components/ui/calendar';
 
 const localizer = momentLocalizer(moment);
 
@@ -45,7 +47,7 @@ export default function Calendar() {
 
   // State
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState<View>('week');
+  const [currentView, setCurrentView] = useState<string>('week');
   const [filters, setFilters] = useState<CalendarFilters>({});
   const [selectedAppointment, setSelectedAppointment] = useState<CalendarAppointment | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -56,6 +58,7 @@ export default function Calendar() {
     provider?: string;
     room?: string;
   } | null>(null);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Calculate date range based on view
   const dateRange = useMemo(() => {
@@ -90,15 +93,43 @@ export default function Calendar() {
     filters
   );
 
-  // Convert appointments to calendar events
+  // Provider color palette and deterministic mapping
+  const COLORS = ['#4f46e5','#16a34a','#06b6d4','#f59e0b','#ef4444','#8b5cf6','#10b981','#e11d48'];
+  const hash = (s: string) => s.split('').reduce((a,b)=>((a<<5)-a)+b.charCodeAt(0),0);
+  const colorFor = (provId: string | undefined) => {
+    if (!provId) return COLORS[0];
+    const idx = Math.abs(hash(provId)) % COLORS.length;
+    return COLORS[idx];
+  };
+
+  // Convert appointments to calendar events with extended props and local timezone parsing
   const events: CalendarEvent[] = useMemo(() => {
-    return appointments.map(appointment => ({
-      id: appointment.id,
-      title: appointment.patients.arabic_full_name,
-      start: new Date(appointment.starts_at),
-      end: new Date(appointment.ends_at),
-      resource: appointment,
-    }));
+    return appointments.map(appointment => {
+      const start = appointment.starts_at ? new Date(appointment.starts_at) : new Date();
+      let end = appointment.ends_at ? new Date(appointment.ends_at) : new Date(start.getTime() + 30*60000);
+      // Ensure end > start
+      if (end <= start) end = new Date(start.getTime() + 30*60000);
+
+      const providerId = appointment.provider_id || appointment.providers?.id;
+      const providerName = appointment.providers?.display_name || '';
+      const roomName = appointment.rooms?.name || '';
+
+      return {
+        id: appointment.id,
+        title: appointment.patients?.arabic_full_name || 'Patient',
+        start,
+        end,
+        resource: appointment,
+        // Extended props for rendering
+        patient_name_ar: appointment.patients?.arabic_full_name,
+        provider_id: providerId,
+        provider_name: providerName,
+        room_name: roomName,
+        status: appointment.status,
+        backgroundColor: colorFor(providerId as string | undefined),
+        borderColor: colorFor(providerId as string | undefined),
+      } as unknown as CalendarEvent;
+    });
   }, [appointments]);
 
   // Handle slot selection (clicking empty time slot)
@@ -118,7 +149,7 @@ export default function Calendar() {
   };
 
   // Handle view change
-  const handleViewChange = (view: View) => {
+  const handleViewChange = (view: string) => {
     setCurrentView(view);
   };
 
@@ -127,24 +158,41 @@ export default function Calendar() {
     setCurrentDate(newDate);
   };
 
+  // Helper for pretty status and chip classes
+  const prettyStatus = (s: string) => ({
+    planned: 'Planned', arrived: 'Arrived', in_chair: 'In Chair', completed: 'Completed', cancelled: 'Cancelled'
+  } as any)[s] || s;
+  const chipClass = (s: string) => ({
+    planned: 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-white/20 text-white',
+    arrived: 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-yellow-300 text-black',
+    in_chair: 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-sky-300 text-black',
+    completed: 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-emerald-300 text-black',
+    cancelled: 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-neutral-400 text-black',
+  } as any)[s] ?? 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-white/20 text-white';
+
   // Custom event component for better styling
   const EventComponent = ({ event }: { event: CalendarEvent }) => {
-    const appointment = event.resource;
-    return (
-      <div className={`h-full p-1 rounded text-xs ${getStatusBackgroundColor(appointment.status)} border-l-2`}>
-        <div className="font-medium truncate" dir="rtl">
-          {appointment.patients.arabic_full_name}
+    const appt: any = event.resource;
+    const bg = (event as any).backgroundColor || getStatusBackgroundColor(appt.status) || '#4f46e5';
+    const providerName = (event as any).provider_name || appt.providers?.display_name;
+    const roomName = (event as any).room_name || appt.rooms?.name;
+
+    // Render compact content for month view (no action buttons or large chips)
+    if (currentView === 'month') {
+      return (
+        <div className="p-1 rounded text-sm text-white/95 custom-event-month" style={{ backgroundColor: bg, borderLeft: `4px solid ${bg}` }}>
+          <div className="font-semibold truncate" dir="rtl">{(event as any).patient_name_ar}</div>
+          <div className="opacity-90 text-xs">{format(event.start, 'HH:mm')}</div>
         </div>
-        {appointment.patients.phone && (
-          <div className="text-muted-foreground truncate text-xs">
-            {appointment.patients.phone}
-          </div>
-        )}
-        {appointment.providers && (
-          <div className="text-muted-foreground truncate text-xs">
-            {appointment.providers.display_name}
-          </div>
-        )}
+      );
+    }
+
+    return (
+      <div className="p-2 rounded text-sm text-white/95 custom-event" style={{ backgroundColor: bg, borderLeft: `4px solid ${bg}` }}>
+        <div className="font-semibold truncate" dir="rtl">{(event as any).patient_name_ar}</div>
+        <div className="opacity-90 text-xs">{format(event.start, 'HH:mm')}–{format(event.end, 'HH:mm')}</div>
+        <div className="opacity-90 truncate text-xs">{roomName}{roomName && providerName ? ' · ' : ''}{providerName}</div>
+        <div><span className={chipClass(appt.status)}>{prettyStatus(appt.status)}</span></div>
       </div>
     );
   };
@@ -183,6 +231,51 @@ export default function Calendar() {
     });
     setIsAddModalOpen(true);
   };
+
+  // Agenda Day view component
+  function groupByHourThenProvider(events: CalendarEvent[]) {
+    const groups: Record<string, any[]> = {};
+    events.forEach(ev => {
+      const hour = format(ev.start, 'HH:00');
+      if (!groups[hour]) groups[hour] = [];
+      groups[hour].push(ev);
+    });
+    // For each hour sort by start
+    return Object.keys(groups).sort().map(hour => ({ hour, items: groups[hour].sort((a,b)=>a.start.getTime()-b.start.getTime()) }));
+  }
+
+  function AgendaDay({ date, events, colorFor, onOpen }: { date: Date; events: CalendarEvent[]; colorFor: any; onOpen: (id:string)=>void }) {
+    const groups = groupByHourThenProvider(events.filter(e => e.start.toDateString() === date.toDateString()));
+    return (
+      <div className="space-y-4">
+        {groups.map(g => (
+          <section key={g.hour}>
+            <h3 className="text-sm font-semibold mb-2">{g.hour}</h3>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {g.items.map((ev: any) => (
+                <div key={ev.id} className="border rounded-md p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium truncate">{(ev as any).patient_name_ar}</div>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] text-white" style={{ backgroundColor: colorFor(ev.provider_id) }}>
+                      {((ev as any).provider_name || '').split(' ').map((p:any)=>p[0]).join('').slice(0,3)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{format(ev.start, 'HH:mm')} - {format(ev.end, 'HH:mm')} · {ev.room_name}</div>
+                  <div className="mt-2"><span className={chipClass(ev.status)}>{prettyStatus(ev.status)}</span></div>
+                  <div className="mt-2 flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => onOpen(ev.id)}>View</Button>
+                    {ev.status === 'planned' && format(new Date(), 'yyyy-MM-dd') === format(ev.start, 'yyyy-MM-dd') && (
+                      <Button size="sm" onClick={() => onOpen(ev.id)}>Check-in</Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -227,21 +320,53 @@ export default function Calendar() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleNavigate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+            onClick={() => {
+              let newDate = new Date(currentDate);
+              if (currentView === 'month') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+              else if (currentView === 'week') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7);
+              else if (currentView === 'day' || currentView === 'agenda') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1);
+              else newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+              handleNavigate(newDate);
+            }}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          
-          <h2 className="text-lg font-semibold min-w-48 text-center">
-            {format(currentDate, currentView === 'month' ? 'MMMM yyyy' : 
-                   currentView === 'week' ? "'Week of' MMM d, yyyy" : 
-                   'EEEE, MMM d, yyyy')}
-          </h2>
-          
+
+          <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-lg font-semibold min-w-48 text-center p-0 h-auto">
+                {format(currentDate, currentView === 'month' ? 'MMMM yyyy' :
+                       currentView === 'week' ? "'Week of' MMM d, yyyy" :
+                       currentView === 'agenda' ? 'EEEE, MMM d, yyyy' :
+                       'EEEE, MMM d, yyyy')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <DayCalendar
+                mode="single"
+                selected={currentDate}
+                onSelect={(d) => {
+                  if (d) {
+                    const newDate = d as Date;
+                    handleNavigate(newDate);
+                    setIsDatePickerOpen(false);
+                  }
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleNavigate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+            onClick={() => {
+              let newDate = new Date(currentDate);
+              if (currentView === 'month') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+              else if (currentView === 'week') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7);
+              else if (currentView === 'day' || currentView === 'agenda') newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
+              else newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+              handleNavigate(newDate);
+            }}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -257,7 +382,7 @@ export default function Calendar() {
 
         {/* View Toggle */}
         <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-          {(['month', 'week', 'day'] as View[]).map((view) => (
+          {(['month', 'week', 'day', 'agenda'] as View[]).map((view) => (
             <Button
               key={view}
               variant={currentView === view ? 'default' : 'ghost'}
@@ -290,14 +415,32 @@ export default function Calendar() {
 
       {/* Calendar */}
       <div className="flex-1 p-4">
+        {/* Legend */}
+        <div className="flex items-center gap-4 mb-3">
+          {Array.from(new Map(appointments.map(a => [a.provider_id || a.providers?.id, a.providers?.display_name || 'Unassigned']))).map(([pid, name]) => (
+            <div key={pid} className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded" style={{ backgroundColor: colorFor(pid as string | undefined) }} />
+              <span className="text-sm">{name}</span>
+            </div>
+          ))}
+        </div>
+
+        {currentView === 'agenda' ? (
+          // Agenda Day view
+          <div className="space-y-4">
+            <AgendaDay date={currentDate} events={events} colorFor={colorFor} onOpen={(id) => {
+              const found = appointments.find(a => a.id === id);
+              if (found) { setSelectedAppointment(found); setIsDrawerOpen(true); }
+            }} />
+          </div>
+        ) : (
         <div style={{ height: 'calc(100vh - 300px)' }}>
           <BigCalendar
             localizer={localizer}
             events={events}
             startAccessor="start"
             endAccessor="end"
-            view={currentView}
-            onView={handleViewChange}
+            {...(currentView !== 'agenda' ? { view: currentView as View, onView: (v: any)=>handleViewChange(v) } : {})}
             date={currentDate}
             onNavigate={handleNavigate}
             onSelectSlot={handleSelectSlot}
@@ -312,12 +455,16 @@ export default function Calendar() {
               event: EventComponent,
             }}
             eventPropGetter={(event) => {
-              const appointment = event.resource;
+              const appointment = event.resource as any;
+              const bg = (event as any).backgroundColor || colorFor(appointment.provider_id);
               return {
                 style: {
-                  backgroundColor: 'transparent',
+                  backgroundColor: bg,
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
+                  minHeight: 28,
+                  color: '#fff',
+                  padding: '2px'
                 },
               };
             }}
@@ -328,6 +475,7 @@ export default function Calendar() {
             })}
           />
         </div>
+        )}
       </div>
 
       {/* Modals and Drawers */}

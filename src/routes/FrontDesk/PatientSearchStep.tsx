@@ -58,7 +58,16 @@ export default function PatientSearchStep({ onSearchResults, onSelectExisting }:
         </DialogDescription>
       </DialogHeader>
 
-      <div className="space-y-4 mt-6">
+      {/* Make the step take full height and allow the patient list to grow */}
+      <div className="flex flex-col h-full mt-6">
+        {/* Create New Patient button at the top */}
+        <div className="mb-4">
+          <Button className="w-full" onClick={() => onSearchResults([], searchTerm)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Create New Patient
+          </Button>
+        </div>
+
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -71,25 +80,25 @@ export default function PatientSearchStep({ onSearchResults, onSelectExisting }:
               autoFocus
             />
           </div>
-          {/* Search button optional; results update live */}
-          <Button 
-            type="submit" 
-            className="w-full" 
+          <Button
+            type="submit"
+            className="w-full"
             disabled={!searchTerm.trim() || isLoading}
           >
             {isLoading ? 'Searching...' : 'Search'}
           </Button>
         </form>
 
-        <div className="space-y-3">
+        <div className="flex-1 flex flex-col mt-4">
           <div>
-          <h3 className="font-medium text-sm">
-            {searchTerm.trim() ? `Found ${searchResults.length} patients:` : 'Latest patients'}
-          </h3>
+            <h3 className="font-medium text-sm">
+              {searchTerm.trim() ? `Found ${searchResults.length} patients:` : 'Latest patients'}
+            </h3>
+          </div>
 
-          {searchResults.length > 0 ? (
-            <div className="space-y-2 max-h-60 overflow-y-auto mt-2">
-              {searchResults.map((patient) => (
+          <div className="flex-1 overflow-y-auto mt-2 space-y-2">
+            {searchResults.length > 0 ? (
+              searchResults.map((patient) => (
                 <Card key={patient.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between">
@@ -122,28 +131,19 @@ export default function PatientSearchStep({ onSearchResults, onSelectExisting }:
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 space-y-3 mt-2">
-              <UserPlus className="h-12 w-12 text-muted-foreground mx-auto" />
-              <div>
-                <h3 className="font-medium">No patients found</h3>
-                <p className="text-sm text-muted-foreground">
-                  Create a new patient with the search term
-                </p>
+              ))
+            ) : (
+              <div className="text-center py-8 space-y-3">
+                <UserPlus className="h-12 w-12 text-muted-foreground mx-auto" />
+                <div>
+                  <h3 className="font-medium">No patients found</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Create a new patient with the search term
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* Always show create new patient button */}
-          <div className="mt-3">
-            <Button className="w-full" onClick={() => onSearchResults([], searchTerm)}>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Create New Patient
-            </Button>
+            )}
           </div>
-        </div>
         </div>
       </div>
     </>

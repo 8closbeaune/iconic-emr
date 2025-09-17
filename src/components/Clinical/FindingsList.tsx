@@ -42,6 +42,10 @@ interface VisitFinding {
 export function FindingsList({ visitId, patient }: FindingsListProps) {
   const queryClient = useQueryClient();
   const [editingFinding, setEditingFinding] = useState<VisitFinding | null>(null);
+  const { profile } = useAppStore();
+  const role = profile?.role || '';
+  const canPlan = role === 'doctor' || role === 'admin';
+  const canEditFindings = role === 'assistant' || canPlan;
 
   const { data: findings, isLoading } = useQuery({
     queryKey: ['visit/findings', visitId],
@@ -197,6 +201,7 @@ export function FindingsList({ visitId, patient }: FindingsListProps) {
                           size="sm"
                           variant="ghost"
                           onClick={() => setEditingFinding(finding)}
+                          disabled={!canEditFindings}
                         >
                           <Edit3 className="h-4 w-4" />
                         </Button>
@@ -204,7 +209,7 @@ export function FindingsList({ visitId, patient }: FindingsListProps) {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleDelete(finding.id)}
-                          disabled={deleteFinding.isPending}
+                          disabled={deleteFinding.isPending || !canEditFindings}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -218,7 +223,7 @@ export function FindingsList({ visitId, patient }: FindingsListProps) {
         </CardContent>
       </Card>
 
-      {editingFinding && (
+      {editingFinding && canEditFindings && (
         <QuickFindingEditModal
           finding={editingFinding}
           patient={patient}

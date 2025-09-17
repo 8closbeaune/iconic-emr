@@ -44,7 +44,11 @@ export function QuickFinding({ visitId, patient }: QuickFindingProps) {
   const queryClient = useQueryClient();
   const [selectedTooth, setSelectedTooth] = useState<{ quadrant: string; number: number } | null>(null);
   const [currentToothSet, setCurrentToothSet] = useState<'primary' | 'permanent'>('permanent');
-  
+  const { profile } = useAppStore();
+  const role = profile?.role || '';
+  const canPlan = role === 'doctor' || role === 'admin';
+  const canEditFindings = role === 'assistant' || canPlan;
+
   const { diagnoses, treatments, getDiagnosisRules, getAllowedTreatments } = useCatalogData();
 
   const form = useForm<FindingFormData>({
@@ -107,6 +111,7 @@ export function QuickFinding({ visitId, patient }: QuickFindingProps) {
           tooth_number: data.tooth_number,
           xray_flag: data.xray_flag,
           notes: data.notes,
+          created_by: profile?.user_id || null,
         })
         .select('id')
         .single();
@@ -406,7 +411,7 @@ export function QuickFinding({ visitId, patient }: QuickFindingProps) {
                 variant="outline"
                 onClick={onSaveAndNext}
                 className="flex-1"
-                disabled={saveFinding.isPending}
+                disabled={saveFinding.isPending || !canEditFindings}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Save & Next
@@ -414,7 +419,7 @@ export function QuickFinding({ visitId, patient }: QuickFindingProps) {
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={saveFinding.isPending}
+                disabled={saveFinding.isPending || !canEditFindings}
               >
                 <ChevronRight className="h-4 w-4 mr-1" />
                 Save
