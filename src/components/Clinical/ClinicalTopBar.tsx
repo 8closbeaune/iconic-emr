@@ -17,7 +17,46 @@ interface ClinicalTopBarProps {
 export function ClinicalTopBar({ activePatient, activeVisit, onVisitChange }: ClinicalTopBarProps) {
   const { data: readyQueue } = useReadyQueue();
   const startVisit = useStartVisit();
+  const finishVisit = useFinishVisit();
+  const { profile } = useAppStore();
+  const role = profile?.role || '';
+  const canPlan = role === 'doctor' || role === 'admin';
+  const canEditFindings = role === 'assistant' || canPlan;
+
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
+
+  const { data: completedCountData } = useQuery({
+    queryKey: ['visit/completed-count', activeVisit?.id],
+    queryFn: async () => {
+      if (!activeVisit?.id) return 0;
+      const { count, error } = await supabase
+        .from('procedure_plan_rows')
+        .select('id', { count: 'exact' })
+        .eq('visit_id', activeVisit.id)
+        .eq('status', 'completed');
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!activeVisit?.id,
+  });
+
+  const { data: inProgressCountData } = useQuery({
+    queryKey: ['visit/inprogress-count', activeVisit?.id],
+    queryFn: async () => {
+      if (!activeVisit?.id) return 0;
+      const { count, error } = await supabase
+        .from('procedure_plan_rows')
+        .select('id', { count: 'exact' })
+        .eq('visit_id', activeVisit.id)
+        .eq('status', 'in_progress');
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!activeVisit?.id,
+  });
+
+  const completedCount = completedCountData || 0;
+  const inProgressCount = inProgressCountData || 0;
 
   const handleBringNext = async () => {
     if (!readyQueue?.length) return;
