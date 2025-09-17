@@ -76,6 +76,7 @@ export function ProvidersManagement() {
                 <TableHead>Display Name</TableHead>
                 <TableHead>Specialty</TableHead>
                 <TableHead>Linked Staff</TableHead>
+                <TableHead>Default Room</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
