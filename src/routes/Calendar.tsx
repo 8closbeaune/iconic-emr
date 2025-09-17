@@ -156,24 +156,31 @@ export default function Calendar() {
     setCurrentDate(newDate);
   };
 
+  // Helper for pretty status and chip classes
+  const prettyStatus = (s: string) => ({
+    planned: 'Planned', arrived: 'Arrived', in_chair: 'In Chair', completed: 'Completed', cancelled: 'Cancelled'
+  } as any)[s] || s;
+  const chipClass = (s: string) => ({
+    planned: 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-white/20 text-white',
+    arrived: 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-yellow-300 text-black',
+    in_chair: 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-sky-300 text-black',
+    completed: 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-emerald-300 text-black',
+    cancelled: 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-neutral-400 text-black',
+  } as any)[s] ?? 'inline-block mt-0.5 px-1.5 py-0.5 rounded bg-white/20 text-white';
+
   // Custom event component for better styling
   const EventComponent = ({ event }: { event: CalendarEvent }) => {
-    const appointment = event.resource;
+    const appt: any = event.resource;
+    const bg = (event as any).backgroundColor || getStatusBackgroundColor(appt.status) || '#4f46e5';
+    const providerName = (event as any).provider_name || appt.providers?.display_name;
+    const roomName = (event as any).room_name || appt.rooms?.name;
+
     return (
-      <div className={`h-full p-1 rounded text-xs ${getStatusBackgroundColor(appointment.status)} border-l-2`}>
-        <div className="font-medium truncate" dir="rtl">
-          {appointment.patients.arabic_full_name}
-        </div>
-        {appointment.patients.phone && (
-          <div className="text-muted-foreground truncate text-xs">
-            {appointment.patients.phone}
-          </div>
-        )}
-        {appointment.providers && (
-          <div className="text-muted-foreground truncate text-xs">
-            {appointment.providers.display_name}
-          </div>
-        )}
+      <div className="p-2 rounded text-sm text-white/95" style={{ backgroundColor: bg, borderLeft: `4px solid ${bg}` }}>
+        <div className="font-semibold truncate" dir="rtl">{(event as any).patient_name_ar}</div>
+        <div className="opacity-90 text-xs">{format(event.start, 'HH:mm')}–{format(event.end, 'HH:mm')}</div>
+        <div className="opacity-90 truncate text-xs">{roomName}{roomName && providerName ? ' · ' : ''}{providerName}</div>
+        <div><span className={chipClass(appt.status)}>{prettyStatus(appt.status)}</span></div>
       </div>
     );
   };
