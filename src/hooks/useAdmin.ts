@@ -21,6 +21,7 @@ export interface ProviderProfile {
   user_id?: string;
   created_at: string;
   profiles?: { full_name?: string };
+  default_room_id?: string | null;
 }
 
 export interface Room {
