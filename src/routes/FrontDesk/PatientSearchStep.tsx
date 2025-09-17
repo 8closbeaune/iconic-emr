@@ -60,11 +60,19 @@ export default function PatientSearchStep({ onSearchResults, onSelectExisting }:
 
       {/* Make the step take full height and allow the patient list to grow */}
       <div className="flex flex-col h-full mt-6">
+        {/* Create New Patient button at the top */}
+        <div className="mb-4">
+          <Button className="w-full" onClick={() => onSearchResults([], searchTerm)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Create New Patient
+          </Button>
+        </div>
+
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="ابح�� بالاسم العربي أو رقم الهاتف"
+              placeholder="ابحث بالاسم العربي أو رقم الهاتف"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 text-right"
@@ -135,13 +143,6 @@ export default function PatientSearchStep({ onSearchResults, onSelectExisting }:
                 </div>
               </div>
             )}
-
-            <div className="mt-3">
-              <Button className="w-full" onClick={() => onSearchResults([], searchTerm)}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Create New Patient
-              </Button>
-            </div>
           </div>
         </div>
       </div>
