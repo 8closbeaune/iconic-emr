@@ -96,13 +96,10 @@ export function ProvidersManagement() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {provider.profiles?.full_name ? (
-                      <div className="flex items-center">
-                        <UserPlus className="h-4 w-4 mr-2 text-green-600" />
-                        {provider.profiles.full_name}
-                      </div>
+                    {rooms.find(r => r.id === provider.default_room_id)?.name ? (
+                      <span>{rooms.find(r => r.id === provider.default_room_id)?.name}</span>
                     ) : (
-                      <span className="text-muted-foreground">Not linked</span>
+                      <span className="text-muted-foreground">Not set</span>
                     )}
                   </TableCell>
                   <TableCell>
