@@ -326,6 +326,25 @@ export default function Calendar() {
 
       {/* Calendar */}
       <div className="flex-1 p-4">
+        {/* Legend */}
+        <div className="flex items-center gap-4 mb-3">
+          {Array.from(new Map(appointments.map(a => [a.provider_id || a.providers?.id, a.providers?.display_name || 'Unassigned']))).map(([pid, name]) => (
+            <div key={pid} className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded" style={{ backgroundColor: colorFor(pid as string | undefined) }} />
+              <span className="text-sm">{name}</span>
+            </div>
+          ))}
+        </div>
+
+        {currentView === 'agenda' ? (
+          // Agenda Day view
+          <div className="space-y-4">
+            <AgendaDay date={currentDate} events={events} colorFor={colorFor} onOpen={(id) => {
+              const found = appointments.find(a => a.id === id);
+              if (found) { setSelectedAppointment(found); setIsDrawerOpen(true); }
+            }} />
+          </div>
+        ) : (
         <div style={{ height: 'calc(100vh - 300px)' }}>
           <BigCalendar
             localizer={localizer}
@@ -348,12 +367,16 @@ export default function Calendar() {
               event: EventComponent,
             }}
             eventPropGetter={(event) => {
-              const appointment = event.resource;
+              const appointment = event.resource as any;
+              const bg = (event as any).backgroundColor || colorFor(appointment.provider_id);
               return {
                 style: {
-                  backgroundColor: 'transparent',
+                  backgroundColor: bg,
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '8px',
+                  minHeight: 28,
+                  color: '#fff',
+                  padding: '2px'
                 },
               };
             }}
@@ -364,6 +387,7 @@ export default function Calendar() {
             })}
           />
         </div>
+        )}
       </div>
 
       {/* Modals and Drawers */}
