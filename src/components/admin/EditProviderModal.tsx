@@ -26,8 +26,9 @@ interface EditProviderModalProps {
 }
 
 export function EditProviderModal({ open, onOpenChange, provider }: EditProviderModalProps) {
-  const { updateProvider, useStaff } = useAdmin();
+  const { updateProvider, useStaff, useRooms } = useAdmin();
   const { data: staff } = useStaff();
+  const { data: rooms = [] } = useRooms();
 
   const doctorStaff = staff?.filter(member => member.role === 'doctor') || [];
 
@@ -37,6 +38,7 @@ export function EditProviderModal({ open, onOpenChange, provider }: EditProvider
       display_name: '',
       specialty: '',
       user_id: '',
+      default_room_id: null,
     },
   });
 
@@ -46,6 +48,7 @@ export function EditProviderModal({ open, onOpenChange, provider }: EditProvider
         display_name: provider.display_name || '',
         specialty: provider.specialty || '',
         user_id: provider.user_id || 'NONE',
+        default_room_id: provider.default_room_id || null,
       });
     }
   }, [provider, form]);
@@ -59,6 +62,7 @@ export function EditProviderModal({ open, onOpenChange, provider }: EditProvider
         display_name: data.display_name,
         specialty: data.specialty || undefined,
         user_id: data.user_id === "NONE" ? undefined : data.user_id,
+        default_room_id: data.default_room_id && data.default_room_id !== 'NONE' ? data.default_room_id : null,
       });
       onOpenChange(false);
     } catch (error) {
@@ -126,6 +130,30 @@ export function EditProviderModal({ open, onOpenChange, provider }: EditProvider
                   <FormLabel>Specialty</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Orthodontist, Endodontist" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="default_room_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default Clinic Room</FormLabel>
+                  <FormControl>
+                    <Select onValueChange={field.onChange} value={field.value || 'NONE'}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select default room (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NONE">No default room</SelectItem>
+                        {rooms.map((room) => (
+                          <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
