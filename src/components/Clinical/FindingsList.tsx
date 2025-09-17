@@ -42,6 +42,10 @@ interface VisitFinding {
 export function FindingsList({ visitId, patient }: FindingsListProps) {
   const queryClient = useQueryClient();
   const [editingFinding, setEditingFinding] = useState<VisitFinding | null>(null);
+  const { profile } = useAppStore();
+  const role = profile?.role || '';
+  const canPlan = role === 'doctor' || role === 'admin';
+  const canEditFindings = role === 'assistant' || canPlan;
 
   const { data: findings, isLoading } = useQuery({
     queryKey: ['visit/findings', visitId],
