@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAppStore } from '@/store/appStore';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export interface ClinicalPatient {
   id: string;
@@ -232,6 +232,33 @@ export function useStartVisit() {
         description: 'Please try again or contact support.',
         variant: 'destructive'
       });
+    },
+  });
+}
+
+// Hook to finish a visit
+export function useFinishVisit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ visitId }: { visitId: string }) => {
+      const { error } = await supabase
+        .from('visits')
+        .update({ ended_at: new Date().toISOString(), status: 'completed' })
+        .eq('id', visitId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['readyQueue'] });
+      queryClient.invalidateQueries({ queryKey: ['clinicalVisit'] });
+      queryClient.invalidateQueries({ queryKey: ['visit/findings'] });
+      queryClient.invalidateQueries({ queryKey: ['visit/plan'] });
+      toast({ title: 'Visit finished' });
+    },
+    onError: (error) => {
+      console.error('Error finishing visit:', error);
+      toast({ title: 'Error finishing visit', variant: 'destructive' });
     },
   });
 }
