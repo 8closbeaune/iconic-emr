@@ -124,6 +124,15 @@ export default function CalendarPickerModal({ isOpen, onClose, patient, onAppoin
   const selectedProviderData = selectedProvider === 'all' ? { display_name: 'All' } : providers.find(p => p.id === selectedProvider);
   const selectedRoomData = rooms.find(r => r.id === selectedRoom);
 
+  // When a provider is selected, auto-select their default room if available
+  useEffect(() => {
+    if (!selectedProvider || selectedProvider === 'all') return;
+    const p = providers.find((pr: any) => pr.id === selectedProvider);
+    if (p?.default_room_id) {
+      setSelectedRoom(p.default_room_id);
+    }
+  }, [selectedProvider, providers]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
