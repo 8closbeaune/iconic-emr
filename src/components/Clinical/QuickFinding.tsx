@@ -411,7 +411,7 @@ export function QuickFinding({ visitId, patient }: QuickFindingProps) {
                 variant="outline"
                 onClick={onSaveAndNext}
                 className="flex-1"
-                disabled={saveFinding.isPending}
+                disabled={saveFinding.isPending || !canEditFindings}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Save & Next
@@ -419,7 +419,7 @@ export function QuickFinding({ visitId, patient }: QuickFindingProps) {
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={saveFinding.isPending}
+                disabled={saveFinding.isPending || !canEditFindings}
               >
                 <ChevronRight className="h-4 w-4 mr-1" />
                 Save
